@@ -1,0 +1,114 @@
+version: 2.1
+
+orbs:
+  jmatsu:
+    executors:
+      default-executor:
+        docker:
+          - image: circleci/golang:1.12
+      working_directory: /go/src/github.com/jmatsu/terraform-provider-slack
+      environments:
+        - GO111MODULE=on
+    commands:
+      go-module:
+        steps:
+          - run: go mod download
+      extend_path:
+        steps:
+          - run: echo "export PATH=$PWD/bin:$PATH" >> "$BASH_ENV"
+      download_goreleaser:
+        steps:
+          - run: curl -sL https://git.io/goreleaser | bash
+          - run: mv goreleaser bin/
+    jobs:
+      go-build:
+        executor: default-executor
+        steps:
+          - checkout
+          - extend_path
+          - go-module
+          - run: build
+      release-binary:
+        executor: default-executor
+        steps:
+          - checkout
+          - extend_path
+          - go-module
+          - jmatsu/download_goreleaser
+
+filters:
+  only_master: &only_master
+    filters:
+      branches:
+        only: /master/
+  ignore_master: &ignore_master
+    filters:
+      branches:
+        ignore: /master/
+  tag_only: &tag_only
+    filters:
+      branches:
+        ignore: /.*/
+      tags:
+        only: /^v.*/
+
+workflows:
+  feature_branch:
+    jobs:
+      - jmatsu/go-build
+  release_binary:
+    jobs:
+      - release: *tag_only
+
+
+jobs:
+  on_every_commit:
+    <<: *default_env
+    steps:
+      - checkout
+      - run: &download_dep
+          name: Download dependencies
+          command: |
+            if type dep >/dev/null 2>&1; then
+              rm $(which dep)
+            fi
+            (curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh)
+            echo 'export PATH=$GOPATH/bin:$PATH' >> $BASH_ENV
+            /go/bin/dep version
+      - run: dep ensure
+      - run: go build .
+      - run: go test -v ./...
+      - run: ./scripts/make_diff_by_go-fmt
+      - run:
+          name: Run all commands
+          command: |
+            export PATH="$PWD:$PATH"
+            while read command_statement; do
+                ${command_statement} -h
+            done < <(scripts/list_all_command.bash)
+  release:
+    <<: *default_env
+    steps:
+      - checkout
+      - run: *download_dep
+      - run: curl -sL https://git.io/goreleaser | bash
+
+workflows:
+  version: 2
+  every_branch:
+    jobs:
+      - on_every_commit
+  on_master:
+    jobs:
+      - update_docs:
+          filters:
+            branches:
+              only: /master/
+  release_binary:
+    jobs:
+      - release:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v.*/
