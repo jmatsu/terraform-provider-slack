@@ -7,18 +7,22 @@ import (
 
 func validateEnums(values []string) schema.SchemaValidateFunc {
 	return func(v interface{}, k string) (we []string, errors []error) {
-		value := v.(string)
-		valid := false
-		for _, role := range values {
-			if value == role {
-				valid = true
-				break
-			}
-		}
-
-		if !valid {
-			errors = append(errors, fmt.Errorf("%s is an invalid value for argument %s", value, k))
+		if !containsAny(values, v.(string)) {
+			errors = append(errors, fmt.Errorf("%s is an invalid value for argument %s", v.(string), k))
 		}
 		return
 	}
+}
+
+func containsAny(values []string, any string) bool {
+	valid := false
+
+	for _, value := range values {
+		if value == any {
+			valid = true
+			break
+		}
+	}
+
+	return valid
 }

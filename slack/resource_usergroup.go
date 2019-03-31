@@ -10,7 +10,7 @@ import (
 func resourceSlackUserGroup() *schema.Resource {
 	return &schema.Resource{
 		Read:   resourceSlackUserGroupRead,
-		Create: resourceSlackuserGroupCreate,
+		Create: resourceSlackUserGroupCreate,
 		Update: resourceSlackUserGroupUpdate,
 		Delete: resourceSlackUserGroupDelete,
 
@@ -24,7 +24,7 @@ func resourceSlackUserGroup() *schema.Resource {
 				Required: true,
 			},
 			"name": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Optional: true,
 			},
 			"description": {
@@ -37,10 +37,6 @@ func resourceSlackUserGroup() *schema.Resource {
 				Default:      "",
 				ValidateFunc: validateEnums([]string{"admins", "owners", ""}),
 			},
-			"id": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
 			"team_id": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -49,11 +45,7 @@ func resourceSlackUserGroup() *schema.Resource {
 	}
 }
 
-const (
-	ctxId = 1
-)
-
-func resourceSlackuserGroupCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceSlackUserGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Team).client
 
 	handle := d.Get("handle").(string)
@@ -93,7 +85,7 @@ func resourceSlackUserGroupRead(d *schema.ResourceData, meta interface{}) error 
 	groups, err := client.GetUserGroupsContext(ctx, func(params *slack.GetUserGroupsParams) {
 		params.IncludeUsers = false
 		params.IncludeCount = false
-		params.IncludeDisabled = false
+		params.IncludeDisabled = true
 	})
 
 	if err != nil {

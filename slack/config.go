@@ -5,6 +5,10 @@ import (
 	"github.com/nlopes/slack"
 )
 
+const (
+	ctxId = 1
+)
+
 type Config struct {
 	Token string
 }
