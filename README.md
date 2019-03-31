@@ -9,7 +9,7 @@ $ VERSION=<...> curl -sSL "https://raw.githubusercontent.com/jmatsu/terraform-pr
 ```
 
 ```bash
-$ go get https://github.com/jmatsu/terraform-provider-slack
+$ go get github.com/jmatsu/terraform-provider-slack
 ```
 
 ```bash
