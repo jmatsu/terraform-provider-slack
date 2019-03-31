@@ -1,0 +1,67 @@
+version: 2.1
+
+orbs:
+  shellcheck: circleci/shellcheck@1.3.4
+  jmatsu:
+    executors:
+      default-executor:
+        docker:
+          - image: circleci/golang:1.12
+        working_directory: /go/src/github.com/jmatsu/terraform-provider-slack
+        environment:
+          - GO111MODULE=on
+    commands:
+      go-module:
+        steps:
+          - restore_cache:
+              name: Restore go modules cache
+              keys:
+                - v1-mod-{{ .Arch }}-{{ checksum "go.mod" }}
+          - run: go mod download
+          - save_cache:
+              name: Save go modules cache
+              key: v1-mod-{{ .Arch }}-{{ checksum "go.mod" }}
+              paths:
+                - ~/go/pkg/mod/cache
+      extend_path:
+        steps:
+          - run: echo "export PATH=$PWD/bin:$PATH" >> "$BASH_ENV"
+    jobs:
+      go-build:
+        executor: default-executor
+        steps:
+          - checkout
+          - extend_path
+          - go-module
+          - run: build
+      release-binary:
+        executor: default-executor
+        steps:
+          - checkout
+          - extend_path
+          - go-module
+          - run: curl -sL https://git.io/goreleaser | bash
+
+filters:
+  only_master: &only_master
+    filters:
+      branches:
+        only: /master/
+  ignore_master: &ignore_master
+    filters:
+      branches:
+        ignore: /master/
+  tag_only: &tag_only
+    filters:
+      branches:
+        ignore: /.*/
+      tags:
+        only: /^v.*/
+
+workflows:
+  build:
+    jobs:
+      - jmatsu/go-build
+  release_binary:
+    jobs:
+      - jmatsu/release-binary: *tag_only
