@@ -1,4 +1,4 @@
-# Terraform Provider for Slack
+# terraform-provider-slack
 
 This is a [Terraform](https://www.terraform.io/) provider for [Slack](https://slack.com)
 
@@ -20,7 +20,7 @@ $ go install
 
 ## Requirements
 
-`[Terraform](https://www.terraform.io/downloads.html) >= v0.11.0`
+[Terraform](https://www.terraform.io/downloads.html) >= v0.11.0
 
 ## Resources
 
