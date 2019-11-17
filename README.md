@@ -27,7 +27,7 @@ $ mv terraform-provider-slack ~/.terraform.d/plugins/darwin_amd64/
 ## Requirements
 
 - [Terraform](https://www.terraform.io/downloads.html) >= v0.12.0 (If you are currently using v0.11.x, then please use `v0.1`.)
-- Scope: `usergroups:read,usergroups:write`
+- Scope: `users:read,usergroups:read,usergroups:write`
 
 ## Resources
 
