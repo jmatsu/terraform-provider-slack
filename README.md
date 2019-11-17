@@ -4,28 +4,35 @@ This is a [Terraform](https://www.terraform.io/) provider for [Slack](https://sl
 
 # Installation
 
-```bash
-$ VERSION=<...> curl -sSL "https://raw.githubusercontent.com/jmatsu/terraform-provider-slack/master/scripts/download.sh" | bash
-```
+*Recommended way*
+
+Download and put a binary into plugins directory. *e.g. the directory name depends on macOS*
 
 ```bash
-$ go get github.com/jmatsu/terraform-provider-slack
+$ VERSION=<...> curl -sSL "https://raw.githubusercontent.com/jmatsu/terraform-provider-slack/master/scripts/download.sh" | bash
+$ mv terraform-provider-slack ~/.terraform.d/plugins/darwin_amd64/
 ```
+
+Or build a binary by yourself.
 
 ```bash
 $ go clone ... && cd /path/to/project
 $ go mod download
-$ go install
+$ go build .
+$ mv terraform-provider-slack ~/.terraform.d/plugins/darwin_amd64/
 ```
 
 ## Requirements
 
-[Terraform](https://www.terraform.io/downloads.html) >= v0.11.0
+- [Terraform](https://www.terraform.io/downloads.html) >= v0.11.0
+- Scope: `usergroups:read,usergroups:write`
 
 ## Resources
 
 ```hcl
 provider "slack" {
+  # A token must be of an user. A bot user's token cannot be used for usergroup api call.
+  # To get a token, Botkit is one of recommended methods.
   token = "SLACK_TOKEN"
 }
 
@@ -47,3 +54,17 @@ resource "slack_usergroup_members" "..." {
 }
 ```
 
+## Import
+
+```bash
+cat<<EOF >> main.tf
+resource "slack_usergroup" "foo" {
+}
+
+resource "slack_usergroup_members" "bar" {
+}
+EOF
+
+$ terraform import slack_usergroup.foo <usergroup id>
+$ terraform import slack_usergroup_members.bar <usergroup id>
+```
