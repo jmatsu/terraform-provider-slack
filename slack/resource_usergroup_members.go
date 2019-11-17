@@ -44,7 +44,7 @@ func resourceSlackUserGroupMembersRead(d *schema.ResourceData, meta interface{})
 
 	ctx := context.WithValue(context.Background(), ctxId, d.Id())
 
-	usergroupId := resourceSlackUserGroupMembersUserGroupId(d)
+	usergroupId := d.Get("usergroup_id").(string)
 
 	log.Printf("[DEBUG] Reading usergroup members: %s", usergroupId)
 
@@ -65,12 +65,17 @@ func resourceSlackUserGroupMembersUpdate(d *schema.ResourceData, meta interface{
 
 	ctx := context.WithValue(context.Background(), ctxId, d.Id())
 
-	usergroupId := resourceSlackUserGroupMembersUserGroupId(d)
-	userIds := strings.Join(d.Get("members").([]string), ",")
+	usergroupId := d.Get("usergroup_id").(string)
+	iMembers := d.Get("members").([]interface{})
+	userIds := make([]string, len(iMembers))
+	for i, v := range iMembers {
+		userIds[i] = v.(string)
+	}
+	userIdParam := strings.Join(userIds, ",")
 
-	log.Printf("[DEBUG] Updating usergroup members: %s (%s)", usergroupId, userIds)
+	log.Printf("[DEBUG] Updating usergroup members: %s (%s)", usergroupId, userIdParam)
 
-	newUserGroup, err := client.UpdateUserGroupMembersContext(ctx, usergroupId, userIds)
+	newUserGroup, err := client.UpdateUserGroupMembersContext(ctx, usergroupId, userIdParam)
 
 	if err != nil {
 		return err
@@ -84,7 +89,7 @@ func resourceSlackUserGroupMembersDelete(d *schema.ResourceData, meta interface{
 	client := meta.(*Team).client
 
 	ctx := context.WithValue(context.Background(), ctxId, d.Id())
-	usergroupId := resourceSlackUserGroupMembersUserGroupId(d)
+	usergroupId := d.Get("usergroup_id").(string)
 
 	log.Printf("[DEBUG] Reading usergroup members: %s", usergroupId)
 
