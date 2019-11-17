@@ -1,5 +1,7 @@
 # terraform-provider-slack
 
+[![CircleCI](https://circleci.com/gh/jmatsu/terraform-provider-slack.svg?style=svg)](https://circleci.com/gh/jmatsu/terraform-provider-slack)
+
 This is a [Terraform](https://www.terraform.io/) provider for [Slack](https://slack.com)
 
 # Installation
