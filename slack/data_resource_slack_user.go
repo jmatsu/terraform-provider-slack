@@ -87,7 +87,7 @@ func dataSourceSlackUserRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	for _, user := range users {
-		if user.Name == queryValue || user.RealName == queryValue {
+		if user.Name == queryValue || user.RealName == queryValue || user.Profile.DisplayName == queryValue {
 			configureUserFunc(d, user)
 			return nil
 		}

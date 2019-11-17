@@ -24,6 +24,8 @@ $ go build .
 $ mv terraform-provider-slack ~/.terraform.d/plugins/darwin_amd64/
 ```
 
+See https://www.terraform.io/docs/configuration/providers.html#third-party-plugins for more details.
+
 ## Requirements
 
 - [Terraform](https://www.terraform.io/downloads.html) >= v0.12.0 (If you are currently using v0.11.x, then please use `v0.1`.)

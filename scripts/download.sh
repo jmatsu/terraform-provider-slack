@@ -57,6 +57,6 @@ else
     tar -xf "$TEMP_FILE" -C "$TEMP_DIR"
 fi
 
-cp "$TEMP_DIR/terraform-provider-slack" .
+cp "$TEMP_DIR/terraform-provider-slack" ./terraform-provider-slack_${VERSION}
 
 rm -fr "$TEMP_DIR"
