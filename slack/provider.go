@@ -24,6 +24,8 @@ func Provider() terraform.ResourceProvider {
 		ResourcesMap: map[string]*schema.Resource{
 			"slack_usergroup":         resourceSlackUserGroup(),
 			"slack_usergroup_members": resourceSlackUserGroupMembers(),
+			"slack_channel": resourceSlackChannel(),
+			"slack_group": resourceSlackGroup(),
 		},
 	}
 
