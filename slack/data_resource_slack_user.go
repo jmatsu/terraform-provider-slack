@@ -2,11 +2,20 @@ package slack
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/nlopes/slack"
+	"gopkg.in/djherbis/times.v1"
+	"io/ioutil"
 	"log"
+	"os"
+	"strings"
+	"time"
 )
+
+const userListCacheDir = "./.terraform/plugins/.cache/terraform-provider-slack"
+const userListCacheFileName = "users.json"
 
 func dataSourceSlackUser() *schema.Resource {
 	return &schema.Resource{
@@ -70,6 +79,7 @@ func dataSourceSlackUserRead(d *schema.ResourceData, meta interface{}) error {
 	ctx := context.WithValue(context.Background(), ctxId, queryValue)
 
 	if queryType == "id" {
+		// https://api.slack.com/docs/rate-limits#tier_t4
 		user, err := client.GetUserInfoContext(ctx, queryValue)
 
 		if err != nil {
@@ -80,10 +90,35 @@ func dataSourceSlackUserRead(d *schema.ResourceData, meta interface{}) error {
 		return nil
 	}
 
-	users, err := client.GetUsersContext(ctx)
+	// Use a cache for users api call because the limitation is more strict than user.info
+	var users []slack.User
+	var shouldApiCall = true
+	var userListCacheFile string
 
-	if err != nil {
-		return err
+	// if creating a directory fails, a cache system won't work but the processing should be executed
+	_ = os.MkdirAll(userListCacheDir, 755)
+	userListCacheFile = strings.Join([]string{userListCacheDir, userListCacheFileName}, string(os.PathSeparator))
+
+	// cache active duration is 1 min because api limitation is based on tier_t2
+	if t, err := times.Stat(userListCacheFile); err == nil {
+		if !time.Now().After(t.ModTime().Add(1 * time.Minute)) {
+			if bytes, err := ioutil.ReadFile(userListCacheFile); err == nil {
+				shouldApiCall = json.Unmarshal(bytes, &users) != nil
+			}
+		}
+	}
+
+	if shouldApiCall {
+		var err error
+
+		// https://api.slack.com/docs/rate-limits#tier_t2
+		if users, err = client.GetUsersContext(ctx); err == nil {
+			if cache, err := json.Marshal(users); err == nil {
+				_ = ioutil.WriteFile(userListCacheFile, cache, 0644)
+			}
+		} else {
+			return err
+		}
 	}
 
 	for _, user := range users {
