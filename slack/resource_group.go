@@ -54,7 +54,7 @@ func resourceSlackGroup() *schema.Resource {
 				Computed: true,
 			},
 			"created": {
-				Type:     schema.TypeString,
+				Type:     schema.TypeInt,
 				Computed: true,
 			},
 			"creator": {
@@ -110,8 +110,8 @@ func resourceSlackGroupRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	_ = d.Set("name", Group.Name)
-	_ = d.Set("topic", Group.Topic)
-	_ = d.Set("purpose", Group.Purpose)
+	_ = d.Set("topic", Group.Topic.Value)
+	_ = d.Set("purpose", Group.Purpose.Value)
 	_ = d.Set("is_archived", Group.IsArchived)
 	_ = d.Set("is_shared", Group.IsShared)
 	_ = d.Set("is_ext_shared", Group.IsExtShared)

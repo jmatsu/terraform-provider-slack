@@ -58,7 +58,7 @@ func resourceSlackChannel() *schema.Resource {
 				Computed: true,
 			},
 			"created": {
-				Type:     schema.TypeString,
+				Type:     schema.TypeInt,
 				Computed: true,
 			},
 			"creator": {
@@ -112,10 +112,9 @@ func resourceSlackChannelRead(d *schema.ResourceData, meta interface{}) error {
 
 		return err
 	}
-
 	_ = d.Set("name", channel.Name)
-	_ = d.Set("topic", channel.Topic)
-	_ = d.Set("purpose", channel.Purpose)
+	_ = d.Set("topic", channel.Topic.Value)
+	_ = d.Set("purpose", channel.Purpose.Value)
 	_ = d.Set("is_archived", channel.IsArchived)
 	_ = d.Set("is_shared", channel.IsShared)
 	_ = d.Set("is_ext_shared", channel.IsExtShared)
