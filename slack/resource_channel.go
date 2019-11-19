@@ -179,5 +179,10 @@ func resourceSlackChannelDelete(d *schema.ResourceData, meta interface{}) error 
 
 	log.Printf("[DEBUG] Deleting(archive) Channel: %s (%s)", id, d.Get("name"))
 
+	if isArchived, ok := d.GetOkExists("is_archived"); ok && isArchived.(bool) {
+		log.Printf("[DEBUG] Did nothing because this channel has already been archived. %s", id)
+		return nil
+	}
+
 	return client.ArchiveChannelContext(ctx, id)
 }

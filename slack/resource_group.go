@@ -175,5 +175,10 @@ func resourceSlackGroupDelete(d *schema.ResourceData, meta interface{}) error {
 
 	log.Printf("[DEBUG] Deleting(archive) Group: %s (%s)", id, d.Get("name"))
 
+	if isArchived, ok := d.GetOkExists("is_archived"); ok && isArchived.(bool) {
+		log.Printf("[DEBUG] Did nothing because this group has already been archived. %s", id)
+		return nil
+	}
+
 	return client.ArchiveGroupContext(ctx, id)
 }
