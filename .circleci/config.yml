@@ -43,7 +43,7 @@ orbs:
           - go-module
           - run: exec_gofmt
           - run: |
-              [[ -n $(git diff) ]] && exit 1
+              [[ -n $(git diff) ]] && exit 1 || true
       release-binary:
         executor: default-executor
         steps:
