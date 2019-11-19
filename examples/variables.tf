@@ -1,19 +1,23 @@
 variable "slack_token" {
-    type = string
+  type = string
 }
 
 variable "example_data_user_id" {
-    type = string
+  type = string
 }
 
 variable "example_data_user_name" {
-    type = string
+  type = string
 }
 
 variable "example_data_channel_id" {
-    type = string
+  type = string
 }
 
 variable "example_data_group_id" {
-    type = string
+  type = string
+}
+
+variable "salt" {
+  type = string
 }

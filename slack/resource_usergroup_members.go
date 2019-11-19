@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/nlopes/slack"
 	"log"
 	"strings"
 )
@@ -16,7 +17,10 @@ func resourceSlackUserGroupMembers() *schema.Resource {
 		Delete: resourceSlackUserGroupMembersDelete,
 
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
+			State: func(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+				_ = d.Set("usergroup_id", d.Id())
+				return schema.ImportStatePassthrough(d, m)
+			},
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -35,7 +39,13 @@ func resourceSlackUserGroupMembers() *schema.Resource {
 	}
 }
 
+func configureSlackUserGroupMembers(d *schema.ResourceData, userGroup slack.UserGroup) {
+	d.SetId(userGroup.ID)
+	_ = d.Set("members", userGroup.Users)
+}
+
 func resourceSlackUserGroupMembersCreate(d *schema.ResourceData, meta interface{}) error {
+	d.SetId(d.Get("usergroup_id").(string))
 	return resourceSlackUserGroupMembersUpdate(d, meta)
 }
 
@@ -48,13 +58,16 @@ func resourceSlackUserGroupMembersRead(d *schema.ResourceData, meta interface{})
 
 	log.Printf("[DEBUG] Reading usergroup members: %s", usergroupId)
 
+	if usergroupId != d.Id() {
+		return fmt.Errorf("it looks usergroup id has been changed but it's not allowed. Res ID: %s", d.Id())
+	}
+
 	members, err := client.GetUserGroupMembersContext(ctx, usergroupId)
 
 	if err != nil {
 		return err
 	}
 
-	_ = d.Set("usergroup_id", usergroupId)
 	_ = d.Set("members", members)
 
 	return nil
@@ -66,6 +79,11 @@ func resourceSlackUserGroupMembersUpdate(d *schema.ResourceData, meta interface{
 	ctx := context.WithValue(context.Background(), ctxId, d.Id())
 
 	usergroupId := d.Get("usergroup_id").(string)
+
+	if usergroupId != d.Id() {
+		return fmt.Errorf("it looks usergroup id has been changed but it's not allowed. Res ID: %s", d.Id())
+	}
+
 	iMembers := d.Get("members").([]interface{})
 	userIds := make([]string, len(iMembers))
 	for i, v := range iMembers {
@@ -75,13 +93,14 @@ func resourceSlackUserGroupMembersUpdate(d *schema.ResourceData, meta interface{
 
 	log.Printf("[DEBUG] Updating usergroup members: %s (%s)", usergroupId, userIdParam)
 
-	newUserGroup, err := client.UpdateUserGroupMembersContext(ctx, usergroupId, userIdParam)
+	userGroup, err := client.UpdateUserGroupMembersContext(ctx, usergroupId, userIdParam)
 
 	if err != nil {
 		return err
 	}
 
-	d.SetId(resourceSlackUserGroupMembersId(newUserGroup.ID, newUserGroup.Handle))
+	configureSlackUserGroupMembers(d, userGroup)
+
 	return resourceSlackUserGroupMembersRead(d, meta)
 }
 
@@ -91,16 +110,16 @@ func resourceSlackUserGroupMembersDelete(d *schema.ResourceData, meta interface{
 	ctx := context.WithValue(context.Background(), ctxId, d.Id())
 	usergroupId := d.Get("usergroup_id").(string)
 
+	if usergroupId != d.Id() {
+		return fmt.Errorf("it looks usergroup id has been changed but it's not allowed. Res ID: %s", d.Id())
+	}
+
 	log.Printf("[DEBUG] Reading usergroup members: %s", usergroupId)
 
-	_, err := client.UpdateUserGroupMembersContext(ctx, usergroupId, "")
-	return err
-}
+	if _, err := client.UpdateUserGroupMembersContext(ctx, usergroupId, ""); err != nil {
+		return err
+	}
 
-func resourceSlackUserGroupMembersUserGroupId(d *schema.ResourceData) string {
-	return strings.Split(d.Id(), ":")[0]
-}
-
-func resourceSlackUserGroupMembersId(usergroupId string, handle string) string {
-	return fmt.Sprintf("%s:%s", usergroupId, handle)
+	d.SetId("")
+	return nil
 }

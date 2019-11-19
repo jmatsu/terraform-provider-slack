@@ -2,10 +2,13 @@ package slack
 
 import (
 	"context"
+	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/nlopes/slack"
 	"log"
 )
+
+const userGroupListCacheFileName = "usergroups.json"
 
 func resourceSlackUserGroup() *schema.Resource {
 	return &schema.Resource{
@@ -45,6 +48,15 @@ func resourceSlackUserGroup() *schema.Resource {
 	}
 }
 
+func configureSlackUserGroup(d *schema.ResourceData, userGroup slack.UserGroup) {
+	d.SetId(userGroup.ID)
+	_ = d.Set("handle", userGroup.Handle)
+	_ = d.Set("name", userGroup.Name)
+	_ = d.Set("description", userGroup.Description)
+	_ = d.Set("auto_type", userGroup.AutoType)
+	_ = d.Set("team_id", userGroup.TeamID)
+}
+
 func resourceSlackUserGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Team).client
 
@@ -71,8 +83,9 @@ func resourceSlackUserGroupCreate(d *schema.ResourceData, meta interface{}) erro
 		return err
 	}
 
-	d.SetId(userGroup.ID)
-	return resourceSlackUserGroupRead(d, meta)
+	configureSlackUserGroup(d, userGroup)
+
+	return nil
 }
 
 func resourceSlackUserGroupRead(d *schema.ResourceData, meta interface{}) error {
@@ -82,48 +95,34 @@ func resourceSlackUserGroupRead(d *schema.ResourceData, meta interface{}) error 
 	id := d.Id()
 
 	log.Printf("[DEBUG] Reading usergroup: %s", d.Id())
-	groups, err := client.GetUserGroupsContext(ctx, func(params *slack.GetUserGroupsParams) {
-		params.IncludeUsers = false
-		params.IncludeCount = false
-		params.IncludeDisabled = true
-	})
 
-	if err != nil {
-		switch err.Error() {
-		case "is_bot":
-			log.Printf("[ERROR] Cannot call this api because a token is of bot")
-			break
-		case "missing_scope":
-			log.Printf("[ERROR] Cannot call this api because a token does not have enough scope")
-			break
-		case "account_inactive":
-			log.Printf("[ERROR] Cannot call this api because a token is of deleted user")
-			break
-		case "invalid_auth":
-			log.Printf("[ERROR] Cannot call this api because a token is invalid or filtered by ip whitelist")
-			break
+	// Use a cache for usergroups api call because the limitation is strict
+	var userGroups *[]slack.UserGroup
 
+	if !restoreJsonCache(userGroupListCacheFileName, &userGroups) {
+		tempUserGroups, err := client.GetUserGroupsContext(ctx, func(params *slack.GetUserGroupsParams) {
+			params.IncludeUsers = false
+			params.IncludeCount = false
+			params.IncludeDisabled = true
+		})
+
+		if err != nil {
+			return err
 		}
 
-		return err
+		userGroups = &tempUserGroups
+
+		saveCacheAsJson(userGroupListCacheFileName, &userGroups)
 	}
 
-	for _, group := range groups {
-		if group.ID == id {
-			_ = d.Set("handle", group.Handle)
-			_ = d.Set("name", group.Name)
-			_ = d.Set("description", group.Description)
-			_ = d.Set("auto_type", group.AutoType)
-			_ = d.Set("team_id", group.TeamID)
+	for _, userGroup := range *userGroups {
+		if userGroup.ID == id {
+			configureSlackUserGroup(d, userGroup)
 			return nil
 		}
 	}
 
-	log.Printf("[WARN] Removing usergroup %s from state because it no longer exists in Slack",
-		id)
-	d.SetId("")
-
-	return nil
+	return fmt.Errorf("a usergroup (%s) is not found", id)
 }
 
 func resourceSlackUserGroupUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -154,8 +153,8 @@ func resourceSlackUserGroupUpdate(d *schema.ResourceData, meta interface{}) erro
 		return err
 	}
 
-	d.SetId(userGroup.ID)
-	return resourceSlackUserGroupRead(d, meta)
+	configureSlackUserGroup(d, userGroup)
+	return nil
 }
 
 func resourceSlackUserGroupDelete(d *schema.ResourceData, meta interface{}) error {
@@ -165,6 +164,11 @@ func resourceSlackUserGroupDelete(d *schema.ResourceData, meta interface{}) erro
 	id := d.Id()
 
 	log.Printf("[DEBUG] Deleting usergroup: %s", id)
-	_, err := client.DisableUserGroupContext(ctx, id)
-	return err
+	if _, err := client.DisableUserGroupContext(ctx, id); err != nil {
+		return err
+	}
+
+	d.SetId("")
+
+	return nil
 }

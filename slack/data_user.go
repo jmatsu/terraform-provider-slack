@@ -2,19 +2,12 @@ package slack
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/nlopes/slack"
-	"gopkg.in/djherbis/times.v1"
-	"io/ioutil"
 	"log"
-	"os"
-	"strings"
-	"time"
 )
 
-const userListCacheDir = "./.terraform/plugins/.cache/terraform-provider-slack"
 const userListCacheFileName = "users.json"
 
 func dataSourceSlackUser() *schema.Resource {
@@ -91,37 +84,25 @@ func dataSourceSlackUserRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	// Use a cache for users api call because the limitation is more strict than user.info
-	var users []slack.User
-	var shouldApiCall = true
-	var userListCacheFile string
+	var users *[]slack.User
 
-	// if creating a directory fails, a cache system won't work but the processing should be executed
-	_ = os.MkdirAll(userListCacheDir, 0755)
-	userListCacheFile = strings.Join([]string{userListCacheDir, userListCacheFileName}, string(os.PathSeparator))
+	if !restoreJsonCache(userListCacheFileName, &users) {
+		tempUsers, err := client.GetUsersContext(ctx)
 
-	// cache active duration is 1 min because api limitation is based on tier_t2
-	if t, err := times.Stat(userListCacheFile); err == nil {
-		if !time.Now().After(t.ModTime().Add(1 * time.Minute)) {
-			if bytes, err := ioutil.ReadFile(userListCacheFile); err == nil {
-				shouldApiCall = json.Unmarshal(bytes, &users) != nil
-			}
-		}
-	}
-
-	if shouldApiCall {
-		var err error
-
-		// https://api.slack.com/docs/rate-limits#tier_t2
-		if users, err = client.GetUsersContext(ctx); err == nil {
-			if cache, err := json.Marshal(users); err == nil {
-				_ = ioutil.WriteFile(userListCacheFile, cache, 0644)
-			}
-		} else {
+		if err != nil {
 			return err
 		}
+
+		users = &tempUsers
+
+		saveCacheAsJson(userListCacheFileName, &users)
 	}
 
-	for _, user := range users {
+	if users == nil {
+		panic(fmt.Errorf("a serious error happened. please create an issue to https://github.com/jmatsu/terraform-provider-slack"))
+	}
+
+	for _, user := range *users {
 		if user.Name == queryValue || user.RealName == queryValue || user.Profile.DisplayName == queryValue {
 			configureUserFunc(d, user)
 			return nil
