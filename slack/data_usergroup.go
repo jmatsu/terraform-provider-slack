@@ -44,7 +44,7 @@ func dataSourceUserGroup() *schema.Resource {
 func dataSlackUserGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Team).client
 
-	usergroupId := d.Get("query_type").(string)
+	usergroupId := d.Get("usergroup_id").(string)
 	ctx := context.WithValue(context.Background(), ctxId, usergroupId)
 
 	log.Printf("[DEBUG] Reading usergroup: %s", usergroupId)
