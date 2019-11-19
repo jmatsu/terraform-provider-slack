@@ -27,9 +27,9 @@ resource "slack_usergroup" "managed" {
   name   = "Managed usergroup for terraform example 2"
 }
 
-resource "slack_usergroup_members" "example" {
-  usergroup_id = slack_usergroup.managed.id
-  members      = [data.slack_user.sample_1.id, data.slack_user.sample_2.id]
+resource "slack_usergroup" "new2" {
+  handle = "zz_terraform_example_new_x"
+  name   = "New usergroup for terraform example x"
 }
 
 resource "slack_usergroup_channels" "example" {

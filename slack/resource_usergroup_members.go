@@ -14,8 +14,7 @@ func resourceSlackUserGroupMembers() *schema.Resource {
 		Read:   resourceSlackUserGroupMembersRead,
 		Create: resourceSlackUserGroupMembersCreate,
 		Update: resourceSlackUserGroupMembersUpdate,
-		// cannot update a usergroup with empty members. disabling a usergroup looks too much for now.
-		//Delete: resourceSlackUserGroupMembersDelete,
+		Delete: resourceSlackUserGroupMembersDelete,
 
 		Importer: &schema.ResourceImporter{
 			State: func(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
@@ -46,8 +45,30 @@ func configureSlackUserGroupMembers(d *schema.ResourceData, userGroup slack.User
 }
 
 func resourceSlackUserGroupMembersCreate(d *schema.ResourceData, meta interface{}) error {
-	d.SetId(d.Get("usergroup_id").(string))
-	return resourceSlackUserGroupMembersUpdate(d, meta)
+	client := meta.(*Team).client
+
+	ctx := context.WithValue(context.Background(), ctxId, d.Id())
+
+	usergroupId := d.Get("usergroup_id").(string)
+
+	iMembers := d.Get("members").([]interface{})
+	userIds := make([]string, len(iMembers))
+	for i, v := range iMembers {
+		userIds[i] = v.(string)
+	}
+	userIdParam := strings.Join(userIds, ",")
+
+	log.Printf("[DEBUG] Creating usergroup members: %s (%s)", usergroupId, userIdParam)
+
+	userGroup, err := client.UpdateUserGroupMembersContext(ctx, usergroupId, userIdParam)
+
+	if err != nil {
+		return err
+	}
+
+	configureSlackUserGroupMembers(d, userGroup)
+
+	return nil
 }
 
 func resourceSlackUserGroupMembersRead(d *schema.ResourceData, meta interface{}) error {
@@ -85,6 +106,12 @@ func resourceSlackUserGroupMembersUpdate(d *schema.ResourceData, meta interface{
 		return fmt.Errorf("it looks usergroup id has been changed but it's not allowed. Res ID: %s", d.Id())
 	}
 
+	_, err := client.EnableUserGroupContext(ctx, usergroupId)
+
+	if err != nil && err.Error() != "already_enabled" {
+		return err
+	}
+
 	iMembers := d.Get("members").([]interface{})
 	userIds := make([]string, len(iMembers))
 	for i, v := range iMembers {
@@ -117,7 +144,8 @@ func resourceSlackUserGroupMembersDelete(d *schema.ResourceData, meta interface{
 
 	log.Printf("[DEBUG] Reading usergroup members: %s", usergroupId)
 
-	if _, err := client.UpdateUserGroupMembersContext(ctx, usergroupId, ""); err != nil {
+	// Cannot use "" as a member parameter, so let me disable it
+	if _, err := client.DisableUserGroupContext(ctx, usergroupId); err != nil {
 		return err
 	}
 
