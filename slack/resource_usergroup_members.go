@@ -14,7 +14,8 @@ func resourceSlackUserGroupMembers() *schema.Resource {
 		Read:   resourceSlackUserGroupMembersRead,
 		Create: resourceSlackUserGroupMembersCreate,
 		Update: resourceSlackUserGroupMembersUpdate,
-		Delete: resourceSlackUserGroupMembersDelete,
+		// cannot update a usergroup with empty members. disabling a usergroup looks too much for now.
+		//Delete: resourceSlackUserGroupMembersDelete,
 
 		Importer: &schema.ResourceImporter{
 			State: func(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
@@ -101,7 +102,7 @@ func resourceSlackUserGroupMembersUpdate(d *schema.ResourceData, meta interface{
 
 	configureSlackUserGroupMembers(d, userGroup)
 
-	return resourceSlackUserGroupMembersRead(d, meta)
+	return nil
 }
 
 func resourceSlackUserGroupMembersDelete(d *schema.ResourceData, meta interface{}) error {
@@ -121,5 +122,6 @@ func resourceSlackUserGroupMembersDelete(d *schema.ResourceData, meta interface{
 	}
 
 	d.SetId("")
+
 	return nil
 }

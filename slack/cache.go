@@ -24,9 +24,9 @@ func restoreJsonCache(name string, v interface{}) bool {
 	_ = os.MkdirAll(cacheDir, 0755)
 	cacheFile := strings.Join([]string{cacheDir, name}, string(os.PathSeparator))
 
-	// cache active duration is 1 min
+	// cache active duration is 6 sec (10 req / min)
 	if t, err := times.Stat(cacheFile); err == nil {
-		if !time.Now().After(t.ModTime().Add(1 * time.Minute)) {
+		if !time.Now().After(t.ModTime().Add(6 * time.Second)) {
 			if bytes, err := ioutil.ReadFile(cacheFile); err == nil {
 				return json.Unmarshal(bytes, v) == nil
 			}
