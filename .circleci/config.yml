@@ -41,7 +41,7 @@ orbs:
           - checkout
           - extend_path
           - go-module
-          - run: exec_fmt
+          - run: exec_gofmt
           - run: |
               [[ -n $(git diff) ]] && exit 1
       release-binary:
