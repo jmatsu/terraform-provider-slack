@@ -3,6 +3,7 @@ package slack
 import (
 	"context"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/nlopes/slack"
 	"log"
 )
 
@@ -65,6 +66,27 @@ func resourceSlackGroup() *schema.Resource {
 	}
 }
 
+func configureSlackGroup(d *schema.ResourceData, group *slack.Group) {
+	d.SetId(group.ID)
+	_ = d.Set("name", group.Name)
+	_ = d.Set("topic", group.Topic.Value)
+	_ = d.Set("purpose", group.Purpose.Value)
+	_ = d.Set("is_archived", group.IsArchived)
+	_ = d.Set("is_shared", group.IsShared)
+	_ = d.Set("is_ext_shared", group.IsExtShared)
+	_ = d.Set("is_org_shared", group.IsOrgShared)
+	_ = d.Set("created", group.Created)
+	_ = d.Set("creator", group.Creator)
+
+	// Never support
+	//_ = d.Set("members", Group.Members)
+	//_ = d.Set("num_members", Group.NumMembers)
+	//_ = d.Set("unread_count", Group.UnreadCount)
+	//_ = d.Set("unread_count_display", Group.UnreadCountDisplay)
+	//_ = d.Set("last_read", Group.Name)
+	//_ = d.Set("latest", Group.Name)
+}
+
 func resourceSlackGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Team).client
 
@@ -75,7 +97,13 @@ func resourceSlackGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	ctx := context.Background()
 
 	log.Printf("[DEBUG] Creating Group: %s", name)
-	_, err := client.CreateGroupContext(ctx, newGroup)
+	group, err := client.CreateGroupContext(ctx, newGroup)
+
+	if err != nil {
+		return err
+	}
+
+	configureSlackGroup(d, group)
 
 	return err
 }
@@ -87,45 +115,13 @@ func resourceSlackGroupRead(d *schema.ResourceData, meta interface{}) error {
 	id := d.Id()
 
 	log.Printf("[DEBUG] Reading Group: %s", d.Id())
-	Group, err := client.GetGroupInfoContext(ctx, id)
+	group, err := client.GetGroupInfoContext(ctx, id)
 
 	if err != nil {
-		switch err.Error() {
-		case "is_bot":
-			log.Printf("[ERROR] Cannot call this api because a token is of bot")
-			break
-		case "missing_scope":
-			log.Printf("[ERROR] Cannot call this api because a token does not have enough scope")
-			break
-		case "account_inactive":
-			log.Printf("[ERROR] Cannot call this api because a token is of deleted user")
-			break
-		case "invalid_auth":
-			log.Printf("[ERROR] Cannot call this api because a token is invalid or filtered by ip whitelist")
-			break
-
-		}
-
 		return err
 	}
 
-	_ = d.Set("name", Group.Name)
-	_ = d.Set("topic", Group.Topic.Value)
-	_ = d.Set("purpose", Group.Purpose.Value)
-	_ = d.Set("is_archived", Group.IsArchived)
-	_ = d.Set("is_shared", Group.IsShared)
-	_ = d.Set("is_ext_shared", Group.IsExtShared)
-	_ = d.Set("is_org_shared", Group.IsOrgShared)
-	_ = d.Set("created", Group.Created)
-	_ = d.Set("creator", Group.Creator)
-
-	// Never support
-	//_ = d.Set("members", Group.Members)
-	//_ = d.Set("num_members", Group.NumMembers)
-	//_ = d.Set("unread_count", Group.UnreadCount)
-	//_ = d.Set("unread_count_display", Group.UnreadCountDisplay)
-	//_ = d.Set("last_read", Group.Name)
-	//_ = d.Set("latest", Group.Name)
+	configureSlackGroup(d, group)
 
 	return nil
 }
@@ -154,17 +150,21 @@ func resourceSlackGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	if isArchived, ok := d.GetOkExists("is_archived"); ok {
 		if isArchived.(bool) {
-			if err := client.ArchiveChannelContext(ctx, id); err != nil {
-				return err
+			if err := client.ArchiveGroupContext(ctx, id); err != nil {
+				if err.Error() != "already_archived" {
+					return err
+				}
 			}
 		} else {
-			if err := client.UnarchiveChannelContext(ctx, id); err != nil {
-				return err
+			if err := client.UnarchiveGroupContext(ctx, id); err != nil {
+				if err.Error() != "not_archived" {
+					return err
+				}
 			}
 		}
 	}
 
-	return nil
+	return resourceSlackGroupRead(d, meta)
 }
 
 func resourceSlackGroupDelete(d *schema.ResourceData, meta interface{}) error {
@@ -175,10 +175,10 @@ func resourceSlackGroupDelete(d *schema.ResourceData, meta interface{}) error {
 
 	log.Printf("[DEBUG] Deleting(archive) Group: %s (%s)", id, d.Get("name"))
 
-	if isArchived, ok := d.GetOkExists("is_archived"); ok && isArchived.(bool) {
-		log.Printf("[DEBUG] Did nothing because this group has already been archived. %s", id)
-		return nil
+	if err := client.ArchiveGroupContext(ctx, id); err != nil {
+		return err
 	}
 
-	return client.ArchiveGroupContext(ctx, id)
+	d.SetId("")
+	return nil
 }
