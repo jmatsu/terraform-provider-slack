@@ -96,7 +96,7 @@ func dataSourceSlackUserRead(d *schema.ResourceData, meta interface{}) error {
 	var userListCacheFile string
 
 	// if creating a directory fails, a cache system won't work but the processing should be executed
-	_ = os.MkdirAll(userListCacheDir, 755)
+	_ = os.MkdirAll(userListCacheDir, 0755)
 	userListCacheFile = strings.Join([]string{userListCacheDir, userListCacheFileName}, string(os.PathSeparator))
 
 	// cache active duration is 1 min because api limitation is based on tier_t2

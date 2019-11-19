@@ -3,6 +3,7 @@ package slack
 import (
 	"context"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/nlopes/slack"
 	"log"
 )
 
@@ -69,49 +70,8 @@ func resourceSlackChannel() *schema.Resource {
 	}
 }
 
-func resourceSlackChannelCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*Team).client
-
-	name := d.Get("name").(string)
-
-	newChannel := name
-
-	ctx := context.Background()
-
-	log.Printf("[DEBUG] Creating Channel: %s", name)
-	_, err := client.CreateChannelContext(ctx, newChannel)
-
-	return err
-}
-
-func resourceSlackChannelRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*Team).client
-
-	ctx := context.WithValue(context.Background(), ctxId, d.Id())
-	id := d.Id()
-
-	log.Printf("[DEBUG] Reading Channel: %s", d.Id())
-	channel, err := client.GetChannelInfoContext(ctx, id)
-
-	if err != nil {
-		switch err.Error() {
-		case "is_bot":
-			log.Printf("[ERROR] Cannot call this api because a token is of bot")
-			break
-		case "missing_scope":
-			log.Printf("[ERROR] Cannot call this api because a token does not have enough scope")
-			break
-		case "account_inactive":
-			log.Printf("[ERROR] Cannot call this api because a token is of deleted user")
-			break
-		case "invalid_auth":
-			log.Printf("[ERROR] Cannot call this api because a token is invalid or filtered by ip whitelist")
-			break
-
-		}
-
-		return err
-	}
+func configureSlackChannel(d *schema.ResourceData, channel *slack.Channel) {
+	d.SetId(channel.ID)
 	_ = d.Set("name", channel.Name)
 	_ = d.Set("topic", channel.Topic.Value)
 	_ = d.Set("purpose", channel.Purpose.Value)
@@ -130,6 +90,43 @@ func resourceSlackChannelRead(d *schema.ResourceData, meta interface{}) error {
 	//_ = d.Set("unread_count_display", channel.UnreadCountDisplay)
 	//_ = d.Set("last_read", channel.Name)
 	//_ = d.Set("latest", channel.Name)
+}
+
+func resourceSlackChannelCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*Team).client
+
+	name := d.Get("name").(string)
+
+	newChannel := name
+
+	ctx := context.Background()
+
+	log.Printf("[DEBUG] Creating Channel: %s", name)
+	channel, err := client.CreateChannelContext(ctx, newChannel)
+
+	if err != nil {
+		return err
+	}
+
+	configureSlackChannel(d, channel)
+
+	return nil
+}
+
+func resourceSlackChannelRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*Team).client
+
+	ctx := context.WithValue(context.Background(), ctxId, d.Id())
+	id := d.Id()
+
+	log.Printf("[DEBUG] Reading Channel: %s", d.Id())
+	channel, err := client.GetChannelInfoContext(ctx, id)
+
+	if err != nil {
+		return err
+	}
+
+	configureSlackChannel(d, channel)
 
 	return nil
 }
@@ -158,17 +155,21 @@ func resourceSlackChannelUpdate(d *schema.ResourceData, meta interface{}) error 
 
 	if isArchived, ok := d.GetOkExists("is_archived"); ok {
 		if isArchived.(bool) {
-			if err := client.ArchiveGroupContext(ctx, id); err != nil {
-				return err
+			if err := client.ArchiveChannelContext(ctx, id); err != nil {
+				if err.Error() != "already_archived" {
+					return err
+				}
 			}
 		} else {
-			if err := client.UnarchiveGroupContext(ctx, id); err != nil {
-				return err
+			if err := client.UnarchiveChannelContext(ctx, id); err != nil {
+				if err.Error() != "not_archived" {
+					return err
+				}
 			}
 		}
 	}
 
-	return nil
+	return resourceSlackChannelRead(d, meta)
 }
 
 func resourceSlackChannelDelete(d *schema.ResourceData, meta interface{}) error {
@@ -179,10 +180,11 @@ func resourceSlackChannelDelete(d *schema.ResourceData, meta interface{}) error 
 
 	log.Printf("[DEBUG] Deleting(archive) Channel: %s (%s)", id, d.Get("name"))
 
-	if isArchived, ok := d.GetOkExists("is_archived"); ok && isArchived.(bool) {
-		log.Printf("[DEBUG] Did nothing because this channel has already been archived. %s", id)
-		return nil
+	if err := client.ArchiveChannelContext(ctx, id); err != nil {
+		return err
 	}
 
-	return client.ArchiveChannelContext(ctx, id)
+	d.SetId("")
+
+	return nil
 }

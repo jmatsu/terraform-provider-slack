@@ -1,0 +1,29 @@
+{
+  "name": "dg-dev-terraform-bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/bot.js",
+  "scripts": {
+    "start": "yarn build && node dist/bot.js",
+    "build": "yarn clean; npx tsc --outDir ./dist ./src/bot.ts",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "botbuilder-adapter-slack": "^1.0.7",
+    "botkit": "^4.6.0",
+    "dotenv": "^7.0.0",
+    "moment": "^2.24.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^24.0.19",
+    "@typescript-eslint/eslint-plugin": "^2.6.1",
+    "@typescript-eslint/parser": "^2.6.1",
+    "eslint": "^6.6.0",
+    "eslint-config-prettier": "^6.5.0",
+    "eslint-plugin-prettier": "^3.1.1",
+    "prettier": "^1.18.2",
+    "rimraf": "^3.0.0",
+    "ts-node": "^8.5.2",
+    "typescript": "~3.7.2"
+  }
+}
