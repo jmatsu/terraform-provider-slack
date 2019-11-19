@@ -18,14 +18,17 @@ func Provider() terraform.ResourceProvider {
 		},
 
 		DataSourcesMap: map[string]*schema.Resource{
-			"slack_user": dataSourceSlackUser(),
+			"slack_user":      dataSourceSlackUser(),
+			"slack_usergroup": dataSourceUserGroup(),
+			"slack_channel":   dataSourceChannel(),
+			"slack_group":     dataSourceGroup(),
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
 			"slack_usergroup":         resourceSlackUserGroup(),
 			"slack_usergroup_members": resourceSlackUserGroupMembers(),
-			"slack_channel": resourceSlackChannel(),
-			"slack_group": resourceSlackGroup(),
+			"slack_channel":           resourceSlackChannel(),
+			"slack_group":             resourceSlackGroup(),
 		},
 	}
 
