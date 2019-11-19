@@ -8,7 +8,7 @@ import (
 
 func dataSourceChannel() *schema.Resource {
 	return &schema.Resource{
-		Read:   dataSlackChannelRead,
+		Read: dataSlackChannelRead,
 
 		Schema: map[string]*schema.Schema{
 			"channel_id": {

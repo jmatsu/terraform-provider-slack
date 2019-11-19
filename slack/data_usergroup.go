@@ -10,7 +10,7 @@ import (
 
 func dataSourceUserGroup() *schema.Resource {
 	return &schema.Resource{
-		Read:   dataSlackUserGroupRead,
+		Read: dataSlackUserGroupRead,
 
 		Schema: map[string]*schema.Schema{
 			"usergroup_id": {
@@ -30,8 +30,8 @@ func dataSourceUserGroup() *schema.Resource {
 				Computed: true,
 			},
 			"auto_type": {
-				Type:         schema.TypeString,
-				Computed:     true,
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"team_id": {
 				Type:     schema.TypeString,

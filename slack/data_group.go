@@ -9,7 +9,7 @@ import (
 func dataSourceGroup() *schema.Resource {
 
 	return &schema.Resource{
-		Read:   dataSlackGroupRead,
+		Read: dataSlackGroupRead,
 
 		Schema: map[string]*schema.Schema{
 			"group_id": {
