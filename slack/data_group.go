@@ -23,10 +23,12 @@ func dataSourceGroup() *schema.Resource {
 			"topic": {
 				Type:     schema.TypeString,
 				Computed: true,
+				Optional: true,
 			},
 			"purpose": {
 				Type:     schema.TypeString,
 				Computed: true,
+				Optional: true,
 			},
 			"is_archived": {
 				Type:     schema.TypeBool,
