@@ -28,6 +28,7 @@ func dataSourceUserGroup() *schema.Resource {
 			"description": {
 				Type:     schema.TypeString,
 				Computed: true,
+				Optional: true,
 			},
 			"auto_type": {
 				Type:     schema.TypeString,
