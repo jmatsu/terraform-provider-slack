@@ -8,12 +8,12 @@ This is a [Terraform](https://www.terraform.io/) provider for [Slack](https://sl
 
 *Recommended way*
 
-Download and put a binary into plugins directory. *e.g. the directory name depends on macOS*
+Download and put a binary into plugins directory.
 
 ```bash
 $ export VERSION=<...>
 $ curl -sSL "https://raw.githubusercontent.com/jmatsu/terraform-provider-slack/master/scripts/download.sh" | bash
-$ mv terraform-provider-slack_$VERSION ~/.terraform.d/plugins/darwin_amd64/
+$ mv terraform-provider-slack_$VERSION ~/.terraform.d/plugins/[architecture name]
 ```
 
 Or build a binary by yourself.
