@@ -9,6 +9,8 @@ import (
 
 func resourceSlackGroup() *schema.Resource {
 	return &schema.Resource{
+		DeprecationMessage: "please use conversation resource with is_private=true instead because slack has deprecated this resource and related APIs.",
+
 		Read:   resourceSlackGroupRead,
 		Create: resourceSlackGroupCreate,
 		Update: resourceSlackGroupUpdate,

@@ -6,15 +6,12 @@ import (
 	"log"
 )
 
-func dataSourceGroup() *schema.Resource {
-
+func dataSourceConversation() *schema.Resource {
 	return &schema.Resource{
-		DeprecationMessage: "please use conversation data instead because slack has deprecated this resource and related APIs.",
-
-		Read: dataSlackGroupRead,
+		Read: dataSlackConversationRead,
 
 		Schema: map[string]*schema.Schema{
-			"group_id": {
+			"channel_id": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
@@ -31,6 +28,10 @@ func dataSourceGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 				Optional: true,
+			},
+			"is_private": {
+				Type:     schema.TypeBool,
+				Computed: true,
 			},
 			"is_archived": {
 				Type:     schema.TypeBool,
@@ -60,30 +61,31 @@ func dataSourceGroup() *schema.Resource {
 	}
 }
 
-func dataSlackGroupRead(d *schema.ResourceData, meta interface{}) error {
+func dataSlackConversationRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Team).client
 
-	groupId := d.Get("group_id").(string)
+	channelId := d.Get("channel_id").(string)
 
-	ctx := context.WithValue(context.Background(), ctxId, groupId)
+	ctx := context.WithValue(context.Background(), ctxId, channelId)
 
-	log.Printf("[DEBUG] Reading group: %s", groupId)
-	group, err := client.GetGroupInfoContext(ctx, groupId)
+	log.Printf("[DEBUG] Reading Conversation: %s", channelId)
+	channel, err := client.GetConversationInfoContext(ctx, channelId, false)
 
 	if err != nil {
 		return err
 	}
 
-	d.SetId(group.ID)
-	_ = d.Set("name", group.Name)
-	_ = d.Set("topic", group.Topic.Value)
-	_ = d.Set("purpose", group.Purpose.Value)
-	_ = d.Set("is_archived", group.IsArchived)
-	_ = d.Set("is_shared", group.IsShared)
-	_ = d.Set("is_ext_shared", group.IsExtShared)
-	_ = d.Set("is_org_shared", group.IsOrgShared)
-	_ = d.Set("created", group.Created)
-	_ = d.Set("creator", group.Creator)
+	d.SetId(channel.ID)
+	_ = d.Set("name", channel.Name)
+	_ = d.Set("topic", channel.Topic.Value)
+	_ = d.Set("purpose", channel.Purpose.Value)
+	_ = d.Set("is_private", channel.IsPrivate)
+	_ = d.Set("is_archived", channel.IsArchived)
+	_ = d.Set("is_shared", channel.IsShared)
+	_ = d.Set("is_ext_shared", channel.IsExtShared)
+	_ = d.Set("is_org_shared", channel.IsOrgShared)
+	_ = d.Set("created", channel.Created)
+	_ = d.Set("creator", channel.Creator)
 
 	return nil
 }

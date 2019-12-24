@@ -7,14 +7,12 @@ import (
 	"log"
 )
 
-func resourceSlackChannel() *schema.Resource {
+func resourceSlackConversation() *schema.Resource {
 	return &schema.Resource{
-		DeprecationMessage: "please use conversation resource with is_private=false instead because slack has deprecated this resource and related APIs.",
-
-		Read:   resourceSlackChannelRead,
-		Create: resourceSlackChannelCreate,
-		Update: resourceSlackChannelUpdate,
-		Delete: resourceSlackChannelDelete,
+		Read:   resourceSlackConversationRead,
+		Create: resourceSlackConversationCreate,
+		Update: resourceSlackConversationUpdate,
+		Delete: resourceSlackConversationDelete,
 
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -23,6 +21,10 @@ func resourceSlackChannel() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:     schema.TypeString,
+				Required: true,
+			},
+			"is_private": {
+				Type:     schema.TypeBool,
 				Required: true,
 			},
 			"topic": {
@@ -50,10 +52,6 @@ func resourceSlackChannel() *schema.Resource {
 				Type:     schema.TypeBool,
 				Computed: true,
 			},
-			"locale": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
 			"created": {
 				Type:     schema.TypeInt,
 				Computed: true,
@@ -66,7 +64,7 @@ func resourceSlackChannel() *schema.Resource {
 	}
 }
 
-func configureSlackChannel(d *schema.ResourceData, channel *slack.Channel) {
+func configureSlackConversation(d *schema.ResourceData, channel *slack.Channel) {
 	d.SetId(channel.ID)
 	_ = d.Set("name", channel.Name)
 	_ = d.Set("topic", channel.Topic.Value)
@@ -75,9 +73,11 @@ func configureSlackChannel(d *schema.ResourceData, channel *slack.Channel) {
 	_ = d.Set("is_shared", channel.IsShared)
 	_ = d.Set("is_ext_shared", channel.IsExtShared)
 	_ = d.Set("is_org_shared", channel.IsOrgShared)
-	_ = d.Set("locale", channel.Locale)
 	_ = d.Set("created", channel.Created)
 	_ = d.Set("creator", channel.Creator)
+
+	// Required
+	_ = d.Set("is_private", channel.IsPrivate)
 
 	// Never support
 	//_ = d.Set("members", channel.Members)
@@ -88,76 +88,76 @@ func configureSlackChannel(d *schema.ResourceData, channel *slack.Channel) {
 	//_ = d.Set("latest", channel.Name)
 }
 
-func resourceSlackChannelCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceSlackConversationCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Team).client
 
 	name := d.Get("name").(string)
 
-	newChannel := name
+	newConversation := name
 
 	ctx := context.Background()
 
-	log.Printf("[DEBUG] Creating Channel: %s", name)
-	channel, err := client.CreateChannelContext(ctx, newChannel)
+	log.Printf("[DEBUG] Creating Conversation: %s", name)
+	channel, err := client.CreateConversationContext(ctx, newConversation, false)
 
 	if err != nil {
 		return err
 	}
 
-	configureSlackChannel(d, channel)
+	configureSlackConversation(d, channel)
 
 	return nil
 }
 
-func resourceSlackChannelRead(d *schema.ResourceData, meta interface{}) error {
+func resourceSlackConversationRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Team).client
 
 	ctx := context.WithValue(context.Background(), ctxId, d.Id())
 	id := d.Id()
 
-	log.Printf("[DEBUG] Reading Channel: %s", d.Id())
-	channel, err := client.GetChannelInfoContext(ctx, id)
+	log.Printf("[DEBUG] Reading Conversation: %s", d.Id())
+	channel, err := client.GetConversationInfoContext(ctx, id, false)
 
 	if err != nil {
 		return err
 	}
 
-	configureSlackChannel(d, channel)
+	configureSlackConversation(d, channel)
 
 	return nil
 }
 
-func resourceSlackChannelUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceSlackConversationUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Team).client
 
 	ctx := context.WithValue(context.Background(), ctxId, d.Id())
 	id := d.Id()
 
-	if _, err := client.RenameChannelContext(ctx, id, d.Get("name").(string)); err != nil {
+	if _, err := client.RenameConversationContext(ctx, id, d.Get("name").(string)); err != nil {
 		return err
 	}
 
 	if topic, ok := d.GetOk("topic"); ok {
-		if _, err := client.SetChannelTopicContext(ctx, id, topic.(string)); err != nil {
+		if _, err := client.SetTopicOfConversationContext(ctx, id, topic.(string)); err != nil {
 			return err
 		}
 	}
 
 	if purpose, ok := d.GetOk("purpose"); ok {
-		if _, err := client.SetChannelPurposeContext(ctx, id, purpose.(string)); err != nil {
+		if _, err := client.SetPurposeOfConversationContext(ctx, id, purpose.(string)); err != nil {
 			return err
 		}
 	}
 
 	if isArchived, ok := d.GetOkExists("is_archived"); ok {
 		if isArchived.(bool) {
-			if err := client.ArchiveChannelContext(ctx, id); err != nil {
+			if err := client.ArchiveConversationContext(ctx, id); err != nil {
 				if err.Error() != "already_archived" {
 					return err
 				}
 			}
 		} else {
-			if err := client.UnarchiveChannelContext(ctx, id); err != nil {
+			if err := client.UnArchiveConversationContext(ctx, id); err != nil {
 				if err.Error() != "not_archived" {
 					return err
 				}
@@ -165,18 +165,18 @@ func resourceSlackChannelUpdate(d *schema.ResourceData, meta interface{}) error 
 		}
 	}
 
-	return resourceSlackChannelRead(d, meta)
+	return resourceSlackConversationRead(d, meta)
 }
 
-func resourceSlackChannelDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceSlackConversationDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Team).client
 
 	ctx := context.WithValue(context.Background(), ctxId, d.Id())
 	id := d.Id()
 
-	log.Printf("[DEBUG] Deleting(archive) Channel: %s (%s)", id, d.Get("name"))
+	log.Printf("[DEBUG] Deleting(archive) Conversation: %s (%s)", id, d.Get("name"))
 
-	if err := client.ArchiveChannelContext(ctx, id); err != nil {
+	if err := client.ArchiveConversationContext(ctx, id); err != nil {
 		return err
 	}
 
