@@ -9,6 +9,8 @@ import (
 
 func resourceSlackChannel() *schema.Resource {
 	return &schema.Resource{
+		DeprecationMessage: "please use conversation resource with is_private=false instead because slack has deprecated this resource and related APIs.",
+
 		Read:   resourceSlackChannelRead,
 		Create: resourceSlackChannelCreate,
 		Update: resourceSlackChannelUpdate,
@@ -23,12 +25,6 @@ func resourceSlackChannel() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			// TODO support but api client's matter
-			//"validate": {
-			//	Type: schema.TypeBool,
-			//	Optional:true,
-			//	Default:true,
-			//},
 			"topic": {
 				Type:     schema.TypeString,
 				Optional: true,

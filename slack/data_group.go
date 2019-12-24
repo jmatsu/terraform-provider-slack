@@ -9,6 +9,8 @@ import (
 func dataSourceGroup() *schema.Resource {
 
 	return &schema.Resource{
+		DeprecationMessage: "please use conversation resource with is_private=true instead because slack has deprecated this resource and related APIs.",
+
 		Read: dataSlackGroupRead,
 
 		Schema: map[string]*schema.Schema{
