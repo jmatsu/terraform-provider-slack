@@ -8,12 +8,12 @@ This is a [Terraform](https://www.terraform.io/) provider for [Slack](https://sl
 
 *Recommended way*
 
-Download and put a binary into plugins directory. *e.g. the directory name depends on macOS*
+Download and put a binary into plugins directory.
 
 ```bash
 $ export VERSION=<...>
 $ curl -sSL "https://raw.githubusercontent.com/jmatsu/terraform-provider-slack/master/scripts/download.sh" | bash
-$ mv terraform-provider-slack_$VERSION ~/.terraform.d/plugins/darwin_amd64/
+$ mv terraform-provider-slack_$VERSION ~/.terraform.d/plugins/[architecture name]
 ```
 
 Or build a binary by yourself.
@@ -34,7 +34,7 @@ See https://www.terraform.io/docs/configuration/providers.html#third-party-plugi
 
 ## Limitations
 
-**I do not have any Plus or Enterprise Grid workspace which I'm free to use unfotunately.**
+**I do not have any Plus or Enterprise Grid workspace which I'm free to use unfortunately.**
 
 That's why several resources, e.g. a slack user, have not been supported yet. 
 
@@ -52,30 +52,20 @@ data "slack_user" "..." {
   query_value = "<name or real name>" or "<user id>"
 }
 
-data "slack_channel" "..." {
+data "slack_conversation" "..." {
   channel_id = <channel id>
-}
-
-data "slack_group" "..." {
-  group_id = <group id>
 }
 
 data "slack_usergroup" "..." {
   usergroup_id = <usergroup id>
 }
 
-resource "slack_channel" "..." {
+resource "slack_conversation" "..." {
   name = "<name>"
   topic = "..."
   purpose = "..."
   is_archive = <true|false>
-}
-
-resource "slack_group" "..." {
-  name = "<name>"
-  topic = "..."
-  purpose = "..."
-  is_archive = <true|false>
+  is_private = <true|false>
 }
 
 resource "slack_usergroup" "..." {
@@ -99,8 +89,7 @@ resource "slack_usergroup_channels" "..." {
 ## Import
 
 ```bash
-$ terraform import slack_channel.<name> <channel id>
-$ terraform import slack_group.<name> <group id>
+$ terraform import slack_conversation.<name> <channel id>
 $ terraform import slack_usergroup.<name> <usergroup id>
 $ terraform import slack_usergroup_members.<name> <usergroup id>
 $ terraform import slack_usergroup_channels.<name> <usergroup id>
