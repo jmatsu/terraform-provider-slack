@@ -25,7 +25,7 @@ func resourceSlackConversation() *schema.Resource {
 			},
 			"is_private": {
 				Type:     schema.TypeBool,
-				Required: false,
+				Required: true,
 			},
 			"topic": {
 				Type:     schema.TypeString,

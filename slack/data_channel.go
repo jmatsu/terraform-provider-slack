@@ -8,7 +8,7 @@ import (
 
 func dataSourceChannel() *schema.Resource {
 	return &schema.Resource{
-		DeprecationMessage: "please use conversation resource with is_private=false instead because slack has deprecated this resource and related APIs.",
+		DeprecationMessage: "please use conversation data instead because slack has deprecated this resource and related APIs.",
 
 		Read: dataSlackChannelRead,
 
