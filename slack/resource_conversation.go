@@ -92,13 +92,12 @@ func resourceSlackConversationCreate(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*Team).client
 
 	name := d.Get("name").(string)
-
-	newConversation := name
+	isPrivate := d.Get("is_private").(bool)
 
 	ctx := context.Background()
 
 	log.Printf("[DEBUG] Creating Conversation: %s", name)
-	channel, err := client.CreateConversationContext(ctx, newConversation, false)
+	channel, err := client.CreateConversationContext(ctx, name, isPrivate)
 
 	if err != nil {
 		return err
