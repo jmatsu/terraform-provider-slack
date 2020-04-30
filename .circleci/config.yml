@@ -50,7 +50,7 @@ orbs:
           - checkout
           - extend_path
           - go-module
-          - run: curl -sL https://git.io/goreleaser | bash
+          - run: curl -sL https://git.io/goreleaser | VERSION=v0.123.3 bash
 
 filters:
   only_master: &only_master
