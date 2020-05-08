@@ -17,6 +17,11 @@ data "slack_user" "sample_2" {
   query_value = var.example_data_user_name
 }
 
+data "slack_user" "sample_3" {
+  query_type  = "name"
+  query_value = var.example_data_user_email
+}
+
 resource "slack_usergroup" "new" {
   handle = "zz_terraform_example_new_${var.salt}"
   name   = "New usergroup for terraform example ${var.salt}"

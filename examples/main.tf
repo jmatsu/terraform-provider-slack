@@ -13,6 +13,11 @@ data "slack_user" "sample_2" {
   query_value = var.example_data_user_name
 }
 
+data "slack_user" "sample_3" {
+  query_type  = "email"
+  query_value = var.example_data_user_email
+}
+
 data "slack_channel" "existing_sample_1" {
   channel_id = var.example_data_channel_id
 }
