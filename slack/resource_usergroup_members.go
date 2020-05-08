@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/nlopes/slack"
+	"github.com/slack-go/slack"
 	"log"
 	"strings"
 )
