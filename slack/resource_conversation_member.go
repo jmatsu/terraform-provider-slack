@@ -5,12 +5,17 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/slack-go/slack"
+	"github.com/thedevsaddam/retry"
 )
 
-const ErrAlreadyInChannel = "already_in_channel"
+const slackConversationMemberErrAlreadyInChannel = "already_in_channel"
+const slackConversationMemberErrNotInChannel = "not_in_channel"
+const slackConversationMemberRetryAttempts = 3
+const slackConversationMemberRetryDelay = 30 * time.Second
 
 func resourceSlackConversationMember() *schema.Resource {
 	return &schema.Resource{
@@ -46,14 +51,19 @@ func resourceSlackConversationMemberCreate(d *schema.ResourceData, meta interfac
 	conversationID := d.Get("conversation_id").(string)
 	userID := d.Get("user_id").(string)
 
-	log.Printf("[DEBUG] Inviting conversation member: %s %s", conversationID, userID)
-	_, err := client.InviteUsersToConversationContext(ctx, conversationID, userID)
-	if err != nil {
-		if strings.Contains(err.Error(), ErrAlreadyInChannel) {
-			// user is already in channel. do not fail, consider it as a successful end state.
-		} else {
-			return err
+	err := retry.DoFunc(slackConversationMemberRetryAttempts, slackConversationMemberRetryDelay, func() error {
+		log.Printf("[DEBUG] Inviting conversation member: %s %s", conversationID, userID)
+		_, err := client.InviteUsersToConversationContext(ctx, conversationID, userID)
+		if err != nil {
+			if strings.Contains(err.Error(), slackConversationMemberErrAlreadyInChannel) {
+				// user is already in channel. do not fail, consider it as a successful end state.
+				return nil
+			}
 		}
+		return err
+	})
+	if err != nil {
+		return err
 	}
 
 	configureSlackConversationMember(d, conversationID, userID)
@@ -93,9 +103,18 @@ func resourceSlackConversationMemberDelete(d *schema.ResourceData, meta interfac
 	conversationID := d.Get("conversation_id").(string)
 	userID := d.Get("user_id").(string)
 
-	log.Printf("[DEBUG] Deleting conversation member: %s %s", conversationID, userID)
-
-	if err := client.KickUserFromConversationContext(ctx, conversationID, userID); err != nil {
+	err := retry.DoFunc(slackConversationMemberRetryAttempts, slackConversationMemberRetryDelay, func() error {
+		log.Printf("[DEBUG] Deleting conversation member: %s %s", conversationID, userID)
+		err := client.KickUserFromConversationContext(ctx, conversationID, userID)
+		if err != nil {
+			if strings.Contains(err.Error(), slackConversationMemberErrNotInChannel) {
+				// user is already not in channel. do not fail, consider it as a successful end state.
+				return nil
+			}
+		}
+		return err
+	})
+	if err != nil {
 		return err
 	}
 
