@@ -89,10 +89,11 @@ func resourceSlackConversationMemberRead(d *schema.ResourceData, meta interface{
 	for _, memberID := range memberIDs {
 		if memberID == userID {
 			configureSlackConversationMember(d, conversationID, userID)
-			break
+			return nil
 		}
 	}
 
+	d.SetId("")
 	return nil
 }
 
