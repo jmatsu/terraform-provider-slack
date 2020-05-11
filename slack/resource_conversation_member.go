@@ -19,10 +19,12 @@ func resourceSlackConversationMember() *schema.Resource {
 			"conversation_id": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"user_id": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 		},
 	}
