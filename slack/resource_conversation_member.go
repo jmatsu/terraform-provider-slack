@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/slack-go/slack"
 )
+
+const ErrAlreadyInChannel = "already_in_channel"
 
 func resourceSlackConversationMember() *schema.Resource {
 	return &schema.Resource{
@@ -43,9 +46,14 @@ func resourceSlackConversationMemberCreate(d *schema.ResourceData, meta interfac
 	conversationID := d.Get("conversation_id").(string)
 	userID := d.Get("user_id").(string)
 
+	log.Printf("[DEBUG] Inviting conversation member: %s %s", conversationID, userID)
 	_, err := client.InviteUsersToConversationContext(ctx, conversationID, userID)
 	if err != nil {
-		return err
+		if strings.Contains(err.Error(), ErrAlreadyInChannel) {
+			// user is already in channel. do not fail, consider it as a successful end state.
+		} else {
+			return err
+		}
 	}
 
 	configureSlackConversationMember(d, conversationID, userID)
