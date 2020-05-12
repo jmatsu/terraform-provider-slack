@@ -22,7 +22,7 @@ Or build a binary by yourself.
 $ go clone ... && cd /path/to/project
 $ go mod download
 $ go build .
-$ mv terraform-provider-slack ~/.terraform.d/plugins/darwin_amd64/
+$ mv terraform-provider-slack ~/.terraform.d/plugins/[architecture name]/
 ```
 
 See https://www.terraform.io/docs/configuration/providers.html#third-party-plugins for more details.
@@ -48,8 +48,8 @@ provider "slack" {
 }
 
 data "slack_user" "..." {
-  query_type = "name" or "id"
-  query_value = "<name or real name>" or "<user id>"
+  query_type = "name" or "id" or "email"
+  query_value = "<name or real name>" or "<user id>" or "<email>"
 }
 
 data "slack_conversation" "..." {
