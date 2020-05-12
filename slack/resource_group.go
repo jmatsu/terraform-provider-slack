@@ -3,7 +3,7 @@ package slack
 import (
 	"context"
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/nlopes/slack"
+	"github.com/slack-go/slack"
 	"log"
 )
 

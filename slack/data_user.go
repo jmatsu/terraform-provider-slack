@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/nlopes/slack"
+	"github.com/slack-go/slack"
 )
 
 const userListCacheFileName = "users.json"
