@@ -3,9 +3,10 @@ package slack
 import (
 	"context"
 	"fmt"
+	"log"
+
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/nlopes/slack"
-	"log"
 )
 
 const userListCacheFileName = "users.json"
@@ -18,7 +19,7 @@ func dataSourceSlackUser() *schema.Resource {
 			"query_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validateEnums([]string{"id", "name"}),
+				ValidateFunc: validateEnums([]string{"id", "name", "email"}),
 			},
 			"query_value": {
 				Type:     schema.TypeString,
@@ -103,11 +104,21 @@ func dataSourceSlackUserRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	for _, user := range *users {
-		if user.Name == queryValue || user.RealName == queryValue || user.Profile.DisplayName == queryValue {
+		if dataSourceSlackUserMatch(&user, queryType, queryValue) {
 			configureUserFunc(d, user)
 			return nil
 		}
 	}
 
 	return fmt.Errorf("a slack user (%s) is not found", queryValue)
+}
+
+func dataSourceSlackUserMatch(user *slack.User, queryType string, queryValue string) bool {
+	switch queryType {
+	case "name":
+		return user.Name == queryValue || user.RealName == queryValue || user.Profile.DisplayName == queryValue
+	case "email":
+		return user.Profile.Email == queryValue
+	}
+	return false
 }

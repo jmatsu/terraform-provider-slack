@@ -14,6 +14,7 @@ const adapter = new SlackAdapter({
         'usergroups:read',
         'usergroups:write',
         'users:read',
+        'users:read.email',
         'channels:read',
         'channels:write',
         'groups:read',
