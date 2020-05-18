@@ -34,6 +34,13 @@ func resourceSlackConversationMember() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"keep_after_destroy": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				ForceNew:    true,
+				Default:     false,
+				Description: "Leave membership in channel intact, even if this resource is destroyed",
+			},
 		},
 	}
 }
@@ -111,26 +118,29 @@ func resourceSlackConversationMemberDelete(d *schema.ResourceData, meta interfac
 
 	conversationID := d.Get("conversation_id").(string)
 	userID := d.Get("user_id").(string)
+	keepAfterDestroy := d.Get("keep_after_destroy").(bool)
 
-	err := retry.DoFunc(slackConversationMemberRetryAttempts, slackConversationMemberRetryDelay, func() error {
-		var err error
-		if userID == auth.UserID {
-			log.Printf("[DEBUG] Leaving conversation: %s %s", conversationID, userID)
-			_, err = client.LeaveConversationContext(ctx, conversationID)
-		} else {
-			log.Printf("[DEBUG] Deleting conversation member: %s %s", conversationID, userID)
-			err = client.KickUserFromConversationContext(ctx, conversationID, userID)
-		}
-		if err != nil {
-			if strings.Contains(err.Error(), slackConversationMemberErrNotInChannel) {
-				// user is already not in channel. do not fail, consider it as a successful end state.
-				return nil
+	if !keepAfterDestroy {
+		err := retry.DoFunc(slackConversationMemberRetryAttempts, slackConversationMemberRetryDelay, func() error {
+			var err error
+			if userID == auth.UserID {
+				log.Printf("[DEBUG] Leaving conversation: %s %s", conversationID, userID)
+				_, err = client.LeaveConversationContext(ctx, conversationID)
+			} else {
+				log.Printf("[DEBUG] Deleting conversation member: %s %s", conversationID, userID)
+				err = client.KickUserFromConversationContext(ctx, conversationID, userID)
 			}
+			if err != nil {
+				if strings.Contains(err.Error(), slackConversationMemberErrNotInChannel) {
+					// user is already not in channel. do not fail, consider it as a successful end state.
+					return nil
+				}
+			}
+			return err
+		})
+		if err != nil {
+			return err
 		}
-		return err
-	})
-	if err != nil {
-		return err
 	}
 
 	d.SetId("")
