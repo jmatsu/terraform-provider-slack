@@ -46,14 +46,21 @@ func configureSlackConversationMember(d *schema.ResourceData, conversationID str
 
 func resourceSlackConversationMemberCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Team).client
+	auth := meta.(*Team).auth
 	ctx := context.WithValue(context.Background(), ctxId, d.Id())
 
 	conversationID := d.Get("conversation_id").(string)
 	userID := d.Get("user_id").(string)
 
 	err := retry.DoFunc(slackConversationMemberRetryAttempts, slackConversationMemberRetryDelay, func() error {
-		log.Printf("[DEBUG] Inviting conversation member: %s %s", conversationID, userID)
-		_, err := client.InviteUsersToConversationContext(ctx, conversationID, userID)
+		var err error
+		if userID == auth.UserID {
+			log.Printf("[DEBUG] Joining conversation: %s %s", conversationID, userID)
+			_, _, _, err = client.JoinConversationContext(ctx, conversationID)
+		} else {
+			log.Printf("[DEBUG] Inviting conversation member: %s %s", conversationID, userID)
+			_, err = client.InviteUsersToConversationContext(ctx, conversationID, userID)
+		}
 		if err != nil {
 			if strings.Contains(err.Error(), slackConversationMemberErrAlreadyInChannel) {
 				// user is already in channel. do not fail, consider it as a successful end state.
@@ -99,14 +106,21 @@ func resourceSlackConversationMemberRead(d *schema.ResourceData, meta interface{
 
 func resourceSlackConversationMemberDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Team).client
+	auth := meta.(*Team).auth
 	ctx := context.WithValue(context.Background(), ctxId, d.Id())
 
 	conversationID := d.Get("conversation_id").(string)
 	userID := d.Get("user_id").(string)
 
 	err := retry.DoFunc(slackConversationMemberRetryAttempts, slackConversationMemberRetryDelay, func() error {
-		log.Printf("[DEBUG] Deleting conversation member: %s %s", conversationID, userID)
-		err := client.KickUserFromConversationContext(ctx, conversationID, userID)
+		var err error
+		if userID == auth.UserID {
+			log.Printf("[DEBUG] Leaving conversation: %s %s", conversationID, userID)
+			_, err = client.LeaveConversationContext(ctx, conversationID)
+		} else {
+			log.Printf("[DEBUG] Deleting conversation member: %s %s", conversationID, userID)
+			err = client.KickUserFromConversationContext(ctx, conversationID, userID)
+		}
 		if err != nil {
 			if strings.Contains(err.Error(), slackConversationMemberErrNotInChannel) {
 				// user is already not in channel. do not fail, consider it as a successful end state.

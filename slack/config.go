@@ -2,6 +2,8 @@ package slack
 
 import (
 	"context"
+	"errors"
+
 	"github.com/slack-go/slack"
 )
 
@@ -15,13 +17,19 @@ type Config struct {
 
 type Team struct {
 	client      *slack.Client
+	auth        *slack.AuthTestResponse
 	StopContext context.Context
 }
 
 func (c *Config) Client() (interface{}, error) {
-	var team Team
+	client := slack.New(c.Token)
+	auth, err := client.AuthTest()
+	if err != nil {
+		return nil, errors.New("Could not authorize with given token")
+	}
 
-	team.client = slack.New(c.Token)
-
-	return &team, nil
+	return &Team{
+		client: client,
+		auth:   auth,
+	}, nil
 }
