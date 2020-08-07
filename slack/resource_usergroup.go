@@ -165,7 +165,9 @@ func resourceSlackUserGroupDelete(d *schema.ResourceData, meta interface{}) erro
 
 	log.Printf("[DEBUG] Deleting usergroup: %s", id)
 	if _, err := client.DisableUserGroupContext(ctx, id); err != nil {
-		return err
+		if err.Error() != "already_disabled" {
+			return err
+		}
 	}
 
 	d.SetId("")
