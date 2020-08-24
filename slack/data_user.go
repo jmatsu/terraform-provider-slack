@@ -9,7 +9,12 @@ import (
 	"github.com/slack-go/slack"
 )
 
-const userListCacheFileName = "users.json"
+const (
+	userListCacheFileName = "users.json"
+	userQueryTypeID       = "id"
+	userQueryTypeName     = "name"
+	userQueryTypeEmail    = "email"
+)
 
 func dataSourceSlackUser() *schema.Resource {
 	return &schema.Resource{
@@ -19,7 +24,7 @@ func dataSourceSlackUser() *schema.Resource {
 			"query_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validateEnums([]string{"id", "name", "email"}),
+				ValidateFunc: validateEnums([]string{userQueryTypeID, userQueryTypeName, userQueryTypeEmail}),
 			},
 			"query_value": {
 				Type:     schema.TypeString,
@@ -72,9 +77,22 @@ func dataSourceSlackUserRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*Team).client
 	ctx := context.WithValue(context.Background(), ctxId, queryValue)
 
-	if queryType == "id" {
+	if queryType == userQueryTypeID {
 		// https://api.slack.com/docs/rate-limits#tier_t4
 		user, err := client.GetUserInfoContext(ctx, queryValue)
+
+		if err != nil {
+			return err
+		}
+
+		configureUserFunc(d, *user)
+		return nil
+	}
+
+	if queryType == userQueryTypeEmail {
+		// https://api.slack.com/methods/users.lookupByEmail
+		// https://api.slack.com/docs/rate-limits#tier_t3
+		user, err := client.GetUserByEmailContext(ctx, queryValue)
 
 		if err != nil {
 			return err
@@ -115,9 +133,9 @@ func dataSourceSlackUserRead(d *schema.ResourceData, meta interface{}) error {
 
 func dataSourceSlackUserMatch(user *slack.User, queryType string, queryValue string) bool {
 	switch queryType {
-	case "name":
+	case userQueryTypeName:
 		return user.Name == queryValue || user.RealName == queryValue || user.Profile.DisplayName == queryValue
-	case "email":
+	case userQueryTypeEmail:
 		return user.Profile.Email == queryValue
 	}
 	return false
