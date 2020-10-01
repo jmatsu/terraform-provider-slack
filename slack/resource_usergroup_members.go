@@ -29,7 +29,7 @@ func resourceSlackUserGroupMembers() *schema.Resource {
 				Required: true,
 			},
 			"members": {
-				Type: schema.TypeList,
+				Type: schema.TypeSet,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
