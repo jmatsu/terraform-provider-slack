@@ -95,3 +95,15 @@ $ terraform import slack_usergroup.<name> <usergroup id>
 $ terraform import slack_usergroup_members.<name> <usergroup id>
 $ terraform import slack_usergroup_channels.<name> <usergroup id>
 ```
+
+## Release
+
+CI will build and archive the release artifacts to GitHub Releases. 
+
+```
+version="/\d\.\d\.\d/"
+
+# please make sure your working branch is same to the default branch.
+git tag "v$version"
+git push "v$version"
+```
