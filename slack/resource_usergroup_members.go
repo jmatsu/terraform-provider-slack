@@ -51,9 +51,9 @@ func resourceSlackUserGroupMembersCreate(d *schema.ResourceData, meta interface{
 
 	usergroupId := d.Get("usergroup_id").(string)
 
-	iMembers := d.Get("members").([]interface{})
-	userIds := make([]string, len(iMembers))
-	for i, v := range iMembers {
+	iMembers := d.Get("members").(*schema.Set)
+	userIds := make([]string, len(iMembers.List()))
+	for i, v := range iMembers.List() {
 		userIds[i] = v.(string)
 	}
 	userIdParam := strings.Join(userIds, ",")
@@ -112,9 +112,9 @@ func resourceSlackUserGroupMembersUpdate(d *schema.ResourceData, meta interface{
 		return err
 	}
 
-	iMembers := d.Get("members").([]interface{})
-	userIds := make([]string, len(iMembers))
-	for i, v := range iMembers {
+	iMembers := d.Get("members").(*schema.Set)
+	userIds := make([]string, len(iMembers.List()))
+	for i, v := range iMembers.List() {
 		userIds[i] = v.(string)
 	}
 	userIdParam := strings.Join(userIds, ",")
