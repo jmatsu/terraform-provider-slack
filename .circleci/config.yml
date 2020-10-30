@@ -44,13 +44,6 @@ orbs:
           - run: exec_gofmt
           - run: |
               [[ -n $(git diff) ]] && exit 1 || true
-      release-binary:
-        executor: default-executor
-        steps:
-          - checkout
-          - extend_path
-          - go-module
-          - run: curl -sL https://git.io/goreleaser | VERSION=v0.123.3 bash
 
 filters:
   only_master: &only_master
@@ -61,18 +54,9 @@ filters:
     filters:
       branches:
         ignore: /master/
-  tag_only: &tag_only
-    filters:
-      branches:
-        ignore: /.*/
-      tags:
-        only: /^v.*/
 
 workflows:
   build:
     jobs:
       - jmatsu/go-build
       - jmatsu/go-fmt
-  release_binary:
-    jobs:
-      - jmatsu/release-binary: *tag_only
