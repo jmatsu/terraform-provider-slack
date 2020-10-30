@@ -6,15 +6,7 @@ This is a [Terraform](https://www.terraform.io/) provider for [Slack](https://sl
 
 # Installation
 
-*Recommended way*
-
-Download and put a binary into plugins directory.
-
-```bash
-$ export VERSION=<...>
-$ curl -sSL "https://raw.githubusercontent.com/jmatsu/terraform-provider-slack/master/scripts/download.sh" | bash
-$ mv terraform-provider-slack_$VERSION ~/.terraform.d/plugins/[architecture name]
-```
+ref: https://registry.terraform.io/providers/jmatsu/slack/latest
 
 Or build a binary by yourself.
 
@@ -98,7 +90,7 @@ $ terraform import slack_usergroup_channels.<name> <usergroup id>
 
 ## Release
 
-CI will build and archive the release artifacts to GitHub Releases. 
+CI will build and archive the release artifacts to GitHub Releases and terraform provider registry. 
 
 ```
 version="/\d\.\d\.\d/"
