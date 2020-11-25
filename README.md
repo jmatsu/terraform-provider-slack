@@ -103,3 +103,7 @@ version="/\d\.\d\.\d/"
 git tag "v$version"
 git push "v$version"
 ```
+
+## LICENSE
+
+Under [MIT](./LICENSE)
