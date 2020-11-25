@@ -4,6 +4,10 @@
 
 This is a [Terraform](https://www.terraform.io/) provider for [Slack](https://slack.com)
 
+## Maintainers
+
+@jmatsu, @billcchung
+
 # Installation
 
 ref: https://registry.terraform.io/providers/jmatsu/slack/latest
