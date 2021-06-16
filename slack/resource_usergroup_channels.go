@@ -28,7 +28,7 @@ func resourceSlackUserGroupChannels() *schema.Resource {
 				Required: true,
 			},
 			"channels": {
-				Type: schema.TypeList,
+				Type: schema.TypeSet,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
@@ -40,7 +40,7 @@ func resourceSlackUserGroupChannels() *schema.Resource {
 
 func configureSlackUserGroupChannels(d *schema.ResourceData, userGroup slack.UserGroup) {
 	d.SetId(userGroup.ID)
-	_ = d.Set("channels", userGroup.Prefs.Channels)
+	_ = d.Set("channels", append(userGroup.Prefs.Channels, userGroup.Prefs.Groups...))
 }
 
 func resourceSlackUserGroupChannelsCreate(d *schema.ResourceData, meta interface{}) error {
