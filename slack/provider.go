@@ -26,12 +26,13 @@ func Provider() terraform.ResourceProvider {
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
-			"slack_usergroup":          resourceSlackUserGroup(),
-			"slack_usergroup_members":  resourceSlackUserGroupMembers(),
-			"slack_conversation":       resourceSlackConversation(),
-			"slack_channel":            resourceSlackChannel(), // deprecated
-			"slack_group":              resourceSlackGroup(),   // deprecated
-			"slack_usergroup_channels": resourceSlackUserGroupChannels(),
+			"slack_usergroup":           resourceSlackUserGroup(),
+			"slack_usergroup_members":   resourceSlackUserGroupMembers(),
+			"slack_conversation":        resourceSlackConversation(),
+			"slack_conversation_member": resourceSlackConversationMember(),
+			"slack_channel":             resourceSlackChannel(), // deprecated
+			"slack_group":               resourceSlackGroup(),   // deprecated
+			"slack_usergroup_channels":  resourceSlackUserGroupChannels(),
 		},
 	}
 
