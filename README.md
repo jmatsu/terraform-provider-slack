@@ -26,7 +26,7 @@ See https://www.terraform.io/docs/configuration/providers.html#third-party-plugi
 ## Requirements
 
 - [Terraform](https://www.terraform.io/downloads.html) >= v0.12.0 (v0.11.x may work but not supported actively)
-- Scope: `users:read,users:read.email,usergroups:read,usergroups:write,channels:read,channels:write,groups:read,groups:write` ref [bot.d/src/bot.ts](./bot.d/src/bot.ts)
+- Scope: `users:read,users:read.email,usergroups:read,usergroups:write,channels:read,channels:write,groups:read,groups:write`
   - `users:read.email` is required since v0.6.0
 
 ## Limitations
