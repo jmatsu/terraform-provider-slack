@@ -2,10 +2,22 @@ package slack
 
 import (
 	"context"
+	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform/helper/validation"
 	"github.com/slack-go/slack"
 	"log"
 )
+
+const (
+	conversationActionOnDestroyNone    = "none"
+	conversationActionOnDestroyArchive = "archive"
+)
+
+var validateConversationActionOnDestroyValue = validation.StringInSlice([]string{
+	conversationActionOnDestroyNone,
+	conversationActionOnDestroyArchive,
+}, false)
 
 func resourceSlackConversation() *schema.Resource {
 	return &schema.Resource{
@@ -39,6 +51,12 @@ func resourceSlackConversation() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
+			},
+			"action_on_destroy": {
+				Type:         schema.TypeString,
+				Description:  "Either of none or archive",
+				Required:     true,
+				ValidateFunc: validateConversationActionOnDestroyValue,
 			},
 			"is_shared": {
 				Type:     schema.TypeBool,
@@ -173,10 +191,20 @@ func resourceSlackConversationDelete(d *schema.ResourceData, meta interface{}) e
 	ctx := context.WithValue(context.Background(), ctxId, d.Id())
 	id := d.Id()
 
-	log.Printf("[DEBUG] Deleting(archive) Conversation: %s (%s)", id, d.Get("name"))
+	action := d.Get("action_on_destroy").(string)
 
-	if err := client.ArchiveConversationContext(ctx, id); err != nil {
-		return err
+	switch action {
+	case conversationActionOnDestroyNone:
+		log.Printf("[DEBUG] Do nothing on Conversation: %s (%s)", id, d.Get("name"))
+	case conversationActionOnDestroyArchive:
+		log.Printf("[DEBUG] Deleting(archive) Conversation: %s (%s)", id, d.Get("name"))
+		if err := client.ArchiveConversationContext(ctx, id); err != nil {
+			if err.Error() != "already_archived" {
+				return err
+			}
+		}
+	default:
+		return fmt.Errorf("unknown action was provided. (%s)", action)
 	}
 
 	d.SetId("")

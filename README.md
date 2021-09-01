@@ -4,10 +4,6 @@
 
 This is a [Terraform](https://www.terraform.io/) provider for [Slack](https://slack.com)
 
-## Maintainers
-
-@jmatsu, @billcchung
-
 # Installation
 
 ref: https://registry.terraform.io/providers/jmatsu/slack/latest
@@ -31,7 +27,7 @@ See https://www.terraform.io/docs/configuration/providers.html#third-party-plugi
 
 ## Limitations
 
-**I do not have any Plus or Enterprise Grid workspace which I'm free to use unfortunately.**
+**I do not have any Plus or Enterprise Grid workspace which I'm free to use, unfortunately.**
 
 That's why several resources, e.g. a slack user, have not been supported yet. 
 
@@ -61,6 +57,7 @@ resource "slack_conversation" "..." {
   name = "<name>"
   topic = "..."
   purpose = "..."
+  action_on_destroy = "<archive|none>" # this is required since v0.8.0
   is_archive = <true|false>
   is_private = <true|false>
 }
@@ -107,3 +104,7 @@ git push "v$version"
 ## LICENSE
 
 Under [MIT](./LICENSE)
+
+## Maintainers
+
+@jmatsu, @billcchung
