@@ -54,7 +54,7 @@ func resourceSlackConversation() *schema.Resource {
 			},
 			"action_on_destroy": {
 				Type:         schema.TypeString,
-				Description:  "Either of none or archive. Be careful if you choose 'archive' because Slack doesn't allow duplicated channel names even if it has been archived.",
+				Description:  "Either of none or archive",
 				Required:     true,
 				ValidateFunc: validateConversationActionOnDestroyValue,
 			},
