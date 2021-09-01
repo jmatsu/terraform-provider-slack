@@ -2,6 +2,7 @@ package slack
 
 import (
 	"context"
+	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/slack-go/slack"
 	"log"
@@ -43,6 +44,12 @@ func resourceSlackGroup() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
+			},
+			"action_on_destroy": {
+				Type:     schema.TypeString,
+				Description: "Either of none or archive. Be careful if you choose 'archive' because Slack doesn't allow duplicated channel names even if it has been archived.",
+				Required: true,
+				ValidateFunc: validateConversationActionOnDestroyValue,
 			},
 			"is_shared": {
 				Type:     schema.TypeBool,
@@ -175,10 +182,20 @@ func resourceSlackGroupDelete(d *schema.ResourceData, meta interface{}) error {
 	ctx := context.WithValue(context.Background(), ctxId, d.Id())
 	id := d.Id()
 
-	log.Printf("[DEBUG] Deleting(archive) Group: %s (%s)", id, d.Get("name"))
+	action := d.Get("action_on_destroy").(string)
 
-	if err := client.ArchiveGroupContext(ctx, id); err != nil {
-		return err
+	switch action {
+	case conversationActionOnDestroyNone:
+		log.Printf("[DEBUG] Do nothing on Group: %s (%s)", id, d.Get("name"))
+	case conversationActionOnDestroyArchive:
+		log.Printf("[DEBUG] Deleting(archive) Group: %s (%s)", id, d.Get("name"))
+		if err := client.ArchiveGroupContext(ctx, id); err != nil {
+			if err.Error() != "already_archived" {
+				return err
+			}
+		}
+	default:
+		return fmt.Errorf("unknown action was provided. (%s)", action)
 	}
 
 	d.SetId("")
