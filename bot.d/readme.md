@@ -1,1 +1,0 @@
-A minimal bot to get an auth token for this provider
