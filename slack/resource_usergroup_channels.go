@@ -51,7 +51,7 @@ func resourceSlackUserGroupChannelsCreate(d *schema.ResourceData, meta interface
 	usergroupId := d.Get("usergroup_id").(string)
 	log.Printf("[DEBUG] Creating usergroup channels relation: %s", usergroupId)
 
-	iChannels := d.Get("channels").([]interface{})
+	iChannels := d.Get("channels").(*schema.Set).List()
 	channelsIds := make([]string, len(iChannels))
 	for i, v := range iChannels {
 		channelsIds[i] = v.(string)
@@ -132,7 +132,7 @@ func resourceSlackUserGroupChannelsUpdate(d *schema.ResourceData, meta interface
 		return fmt.Errorf("it looks usergroup id has been changed but it's not allowed. Res ID: %s", d.Id())
 	}
 
-	iChannels := d.Get("channels").([]interface{})
+	iChannels := d.Get("channels").(*schema.Set).List()
 	channelsIds := make([]string, len(iChannels))
 	for i, v := range iChannels {
 		channelsIds[i] = v.(string)
