@@ -44,7 +44,7 @@ var descriptions map[string]string
 
 func init() {
 	descriptions = map[string]string{
-		"token": "The OAuth token used to connect to Slack.",
+		"token": "The OAuth token used to connect to Slack. This can also be set via the `SLACK_TOKEN` environment variable.",
 	}
 }
 
