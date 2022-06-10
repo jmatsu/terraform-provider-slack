@@ -2,7 +2,7 @@
 
 set -eu
 
-readonly RELEASE_URL="https://github.com/jmatsu/terraform-provider-slack/releases"
+readonly RELEASE_URL="https://github.com/remerge/terraform-provider-slack/releases"
 
 die() {
     echo "$@" 1>&2

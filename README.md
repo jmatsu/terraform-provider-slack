@@ -1,12 +1,10 @@
 # terraform-provider-slack
 
-[![CircleCI](https://circleci.com/gh/jmatsu/terraform-provider-slack.svg?style=svg)](https://circleci.com/gh/jmatsu/terraform-provider-slack)
-
 This is a [Terraform](https://www.terraform.io/) provider for [Slack](https://slack.com)
 
 # Installation
 
-ref: https://registry.terraform.io/providers/jmatsu/slack/latest
+ref: https://registry.terraform.io/providers/remerge/slack/latest
 
 Or build a binary by yourself.
 
@@ -29,7 +27,7 @@ See https://www.terraform.io/docs/configuration/providers.html#third-party-plugi
 
 **I do not have any Plus or Enterprise Grid workspace which I'm free to use, unfortunately.**
 
-That's why several resources, e.g. a slack user, have not been supported yet. 
+That's why several resources, e.g. a slack user, have not been supported yet.
 
 ## Resources
 
@@ -91,7 +89,7 @@ $ terraform import slack_usergroup_channels.<name> <usergroup id>
 
 ## Release
 
-CI will build and archive the release artifacts to GitHub Releases and terraform provider registry. 
+CI will build and archive the release artifacts to GitHub Releases and terraform provider registry.
 
 ```
 version="/\d\.\d\.\d/"
@@ -107,4 +105,4 @@ Under [MIT](./LICENSE)
 
 ## Maintainers
 
-@jmatsu, @billcchung
+@jmatsu, @billcchung, @hollow

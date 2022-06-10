@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/hashicorp/terraform/plugin"
-	"github.com/jmatsu/terraform-provider-slack/slack"
+	"github.com/remerge/terraform-provider-slack/slack"
 )
 
 func main() {

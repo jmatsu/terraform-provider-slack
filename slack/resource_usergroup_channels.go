@@ -3,9 +3,10 @@ package slack
 import (
 	"context"
 	"fmt"
+	"log"
+
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/slack-go/slack"
-	"log"
 )
 
 func resourceSlackUserGroupChannels() *schema.Resource {
@@ -107,7 +108,7 @@ func resourceSlackUserGroupChannelsRead(d *schema.ResourceData, meta interface{}
 	}
 
 	if userGroups == nil {
-		panic(fmt.Errorf("a serious error happened. please create an issue to https://github.com/jmatsu/terraform-provider-slack"))
+		panic(fmt.Errorf("a serious error happened. please create an issue to https://github.com/remerge/terraform-provider-slack"))
 	}
 
 	for _, userGroup := range *userGroups {

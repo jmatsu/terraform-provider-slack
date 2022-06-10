@@ -118,7 +118,7 @@ func dataSourceSlackUserRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if users == nil {
-		panic(fmt.Errorf("a serious error happened. please create an issue to https://github.com/jmatsu/terraform-provider-slack"))
+		panic(fmt.Errorf("a serious error happened. please create an issue to https://github.com/remerge/terraform-provider-slack"))
 	}
 
 	for _, user := range *users {
