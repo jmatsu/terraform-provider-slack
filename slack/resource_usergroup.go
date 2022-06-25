@@ -3,6 +3,7 @@ package slack
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/slack-go/slack"
 	"log"
@@ -12,13 +13,13 @@ const userGroupListCacheFileName = "usergroups.json"
 
 func resourceSlackUserGroup() *schema.Resource {
 	return &schema.Resource{
-		Read:   resourceSlackUserGroupRead,
-		Create: resourceSlackUserGroupCreate,
-		Update: resourceSlackUserGroupUpdate,
-		Delete: resourceSlackUserGroupDelete,
+		ReadContext:   resourceSlackUserGroupRead,
+		CreateContext: resourceSlackUserGroupCreate,
+		UpdateContext: resourceSlackUserGroupUpdate,
+		DeleteContext: resourceSlackUserGroupDelete,
 
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
+			StateContext: schema.ImportStatePassthroughContext,
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -57,7 +58,7 @@ func configureSlackUserGroup(d *schema.ResourceData, userGroup slack.UserGroup) 
 	_ = d.Set("team_id", userGroup.TeamID)
 }
 
-func resourceSlackUserGroupCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceSlackUserGroupCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*Team).client
 
 	handle := d.Get("handle").(string)
@@ -74,13 +75,17 @@ func resourceSlackUserGroupCreate(d *schema.ResourceData, meta interface{}) erro
 		AutoType:    d.Get("auto_type").(string),
 	}
 
-	ctx := context.Background()
-
 	log.Printf("[DEBUG] Creating usergroup: %s (%s)", handle, name)
 	userGroup, err := client.CreateUserGroupContext(ctx, *newUserGroup)
 
 	if err != nil {
-		return err
+		return diag.Diagnostics{
+			{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("provider cannot create a slack usergroup (%s)", handle),
+				Detail:   err.Error(),
+			},
+		}
 	}
 
 	configureSlackUserGroup(d, userGroup)
@@ -88,10 +93,9 @@ func resourceSlackUserGroupCreate(d *schema.ResourceData, meta interface{}) erro
 	return nil
 }
 
-func resourceSlackUserGroupRead(d *schema.ResourceData, meta interface{}) error {
+func resourceSlackUserGroupRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*Team).client
 
-	ctx := context.WithValue(context.Background(), ctxId, d.Id())
 	id := d.Id()
 
 	log.Printf("[DEBUG] Reading usergroup: %s", d.Id())
@@ -107,7 +111,13 @@ func resourceSlackUserGroupRead(d *schema.ResourceData, meta interface{}) error 
 		})
 
 		if err != nil {
-			return err
+			return diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  fmt.Sprintf("provider cannot find slack usergroups"),
+					Detail:   err.Error(),
+				},
+			}
 		}
 
 		userGroups = &tempUserGroups
@@ -122,10 +132,16 @@ func resourceSlackUserGroupRead(d *schema.ResourceData, meta interface{}) error 
 		}
 	}
 
-	return fmt.Errorf("a usergroup (%s) is not found", id)
+	return diag.Diagnostics{
+		{
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("provider cannot find a slack usergroup (%s)", id),
+			Detail:   fmt.Sprintf("a usergroup (%s) is not found in usergroups that this token can view", id),
+		},
+	}
 }
 
-func resourceSlackUserGroupUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceSlackUserGroupUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*Team).client
 
 	handle := d.Get("handle").(string)
@@ -135,7 +151,6 @@ func resourceSlackUserGroupUpdate(d *schema.ResourceData, meta interface{}) erro
 		name = d.Get("name").(string)
 	}
 
-	ctx := context.WithValue(context.Background(), ctxId, d.Id())
 	id := d.Id()
 
 	editedUserGroup := &slack.UserGroup{
@@ -146,27 +161,38 @@ func resourceSlackUserGroupUpdate(d *schema.ResourceData, meta interface{}) erro
 		AutoType:    d.Get("auto_type").(string),
 	}
 
-	log.Printf("[DEBUG] Updating usergroup: %s", d.Id())
+	log.Printf("[DEBUG] Updating usergroup: %s", id)
 	userGroup, err := client.UpdateUserGroupContext(ctx, *editedUserGroup)
 
 	if err != nil {
-		return err
+		return diag.Diagnostics{
+			{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("provider cannot update the slack usergroup (%s)", id),
+				Detail:   err.Error(),
+			},
+		}
 	}
 
 	configureSlackUserGroup(d, userGroup)
 	return nil
 }
 
-func resourceSlackUserGroupDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceSlackUserGroupDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*Team).client
 
-	ctx := context.WithValue(context.Background(), ctxId, d.Id())
 	id := d.Id()
 
 	log.Printf("[DEBUG] Deleting usergroup: %s", id)
 	if _, err := client.DisableUserGroupContext(ctx, id); err != nil {
 		if err.Error() != "already_disabled" {
-			return err
+			return diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  fmt.Sprintf("provider cannot disable the slack usergroup (%s)", id),
+					Detail:   err.Error(),
+				},
+			}
 		}
 	}
 
