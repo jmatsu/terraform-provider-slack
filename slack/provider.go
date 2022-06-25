@@ -1,11 +1,12 @@
 package slack
 
 import (
+	"context"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func Provider() terraform.ResourceProvider {
+func Provider() *schema.Provider {
 	var p *schema.Provider
 	p = &schema.Provider{
 		Schema: map[string]*schema.Schema{
@@ -21,21 +22,17 @@ func Provider() terraform.ResourceProvider {
 			"slack_user":         dataSourceSlackUser(),
 			"slack_usergroup":    dataSourceUserGroup(),
 			"slack_conversation": dataSourceConversation(),
-			"slack_channel":      dataSourceChannel(), // deprecated
-			"slack_group":        dataSourceGroup(),   // deprecated
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
 			"slack_usergroup":          resourceSlackUserGroup(),
 			"slack_usergroup_members":  resourceSlackUserGroupMembers(),
 			"slack_conversation":       resourceSlackConversation(),
-			"slack_channel":            resourceSlackChannel(), // deprecated
-			"slack_group":              resourceSlackGroup(),   // deprecated
 			"slack_usergroup_channels": resourceSlackUserGroupChannels(),
 		},
 	}
 
-	p.ConfigureFunc = providerConfigure(p)
+	p.ConfigureContextFunc = providerConfigure(p)
 
 	return p
 }
@@ -48,18 +45,22 @@ func init() {
 	}
 }
 
-func providerConfigure(p *schema.Provider) schema.ConfigureFunc {
-	return func(d *schema.ResourceData) (interface{}, error) {
+func providerConfigure(p *schema.Provider) schema.ConfigureContextFunc {
+	return func(context context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 		config := Config{
 			Token: d.Get("token").(string),
 		}
 
 		meta, err := config.Client()
 		if err != nil {
-			return nil, err
+			return nil, diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "Cannot create a Slack client in set up",
+					Detail:   err.Error(),
+				},
+			}
 		}
-
-		meta.(*Team).StopContext = p.StopContext()
 
 		return meta, nil
 	}
