@@ -1,7 +1,6 @@
 package slack
 
 import (
-	"context"
 	"github.com/slack-go/slack"
 )
 
@@ -14,8 +13,7 @@ type Config struct {
 }
 
 type Team struct {
-	client      *slack.Client
-	StopContext context.Context
+	client *slack.Client
 }
 
 func (c *Config) Client() (interface{}, error) {
