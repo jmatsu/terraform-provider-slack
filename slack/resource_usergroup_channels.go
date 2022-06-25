@@ -197,7 +197,7 @@ func resourceSlackUserGroupChannelsDelete(ctx context.Context, d *schema.Resourc
 
 	log.Printf("[DEBUG] Deleting usergroup channels relation: %s", usergroupId)
 
-	if usergroupId !=currentId {
+	if usergroupId != currentId {
 		return diag.Diagnostics{
 			{
 				Severity: diag.Error,

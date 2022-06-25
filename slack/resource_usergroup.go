@@ -36,9 +36,9 @@ func resourceSlackUserGroup() *schema.Resource {
 				Optional: true,
 			},
 			"auto_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Default:      "",
+				Type:             schema.TypeString,
+				Optional:         true,
+				Default:          "",
 				ValidateDiagFunc: validateEnums([]string{"admins", "owners", ""}),
 			},
 			"team_id": {

@@ -10,11 +10,11 @@ import (
 func validateEnums(values []string) schema.SchemaValidateDiagFunc {
 	return func(v interface{}, path cty.Path) diag.Diagnostics {
 		if !containsAny(values, v.(string)) {
-			return diag.Diagnostics {
+			return diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary: fmt.Sprintf("%s is an invalid value for argument %s", v.(string), path),
-					Detail: "",
+					Summary:  fmt.Sprintf("%s is an invalid value for argument %s", v.(string), path),
+					Detail:   "",
 				},
 			}
 		}
