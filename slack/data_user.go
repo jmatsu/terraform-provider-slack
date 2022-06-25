@@ -3,6 +3,7 @@ package slack
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"log"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -18,7 +19,7 @@ const (
 
 func dataSourceSlackUser() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceSlackUserRead,
+		ReadContext: dataSourceSlackUserRead,
 
 		Schema: map[string]*schema.Schema{
 			"query_type": {
@@ -58,7 +59,7 @@ func dataSourceSlackUser() *schema.Resource {
 	}
 }
 
-func dataSourceSlackUserRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceSlackUserRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	queryType := d.Get("query_type").(string)
 	queryValue := d.Get("query_value").(string)
 
@@ -72,17 +73,22 @@ func dataSourceSlackUserRead(d *schema.ResourceData, meta interface{}) error {
 		_ = d.Set("has_2fa", user.Has2FA)
 	}
 
-	log.Printf("[INFO] Refreshing Slack User: %s", queryValue)
+	log.Printf("[INFO] Refreshing Slack User: %s (finding by %s)", queryValue, queryType)
 
 	client := meta.(*Team).client
-	ctx := context.WithValue(context.Background(), ctxId, queryValue)
 
 	if queryType == userQueryTypeID {
 		// https://api.slack.com/docs/rate-limits#tier_t4
 		user, err := client.GetUserInfoContext(ctx, queryValue)
 
 		if err != nil {
-			return err
+			return diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  fmt.Sprintf("provider cannot find a slack user (%s) by %s", queryValue, queryType),
+					Detail:   err.Error(),
+				},
+			}
 		}
 
 		configureUserFunc(d, *user)
@@ -95,40 +101,74 @@ func dataSourceSlackUserRead(d *schema.ResourceData, meta interface{}) error {
 		user, err := client.GetUserByEmailContext(ctx, queryValue)
 
 		if err != nil {
-			return err
+			return diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  fmt.Sprintf("provider cannot find a slack user (%s) by %s", queryValue, queryType),
+					Detail:   err.Error(),
+				},
+			}
 		}
 
 		configureUserFunc(d, *user)
 		return nil
 	}
 
-	// Use a cache for users api call because the limitation is more strict than user.info
-	var users *[]slack.User
+	if queryType == userQueryTypeName {
+		// Use a cache for users api call because the limitation is stricter than user.info
+		var users *[]slack.User
 
-	if !restoreJsonCache(userListCacheFileName, &users) {
-		tempUsers, err := client.GetUsersContext(ctx)
+		if !restoreJsonCache(userListCacheFileName, &users) {
+			tempUsers, err := client.GetUsersContext(ctx)
 
-		if err != nil {
-			return err
+			if err != nil {
+				return diag.Diagnostics{
+					{
+						Severity: diag.Error,
+						Summary:  fmt.Sprintf("provider cannot find a slack user (%s) by %s", queryValue, queryType),
+						Detail:   err.Error(),
+					},
+				}
+			}
+
+			users = &tempUsers
+
+			saveCacheAsJson(userListCacheFileName, &users)
 		}
 
-		users = &tempUsers
+		if users == nil {
+			return diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  fmt.Sprintf("Serious error happened while finding a slack user (%s) by %s", queryValue, queryType),
+					Detail:   "Internal provider error. Please use another query_type or open an issue at https://github.com/jmatsu/terraform-provider-slack",
+				},
+			}
+		}
 
-		saveCacheAsJson(userListCacheFileName, &users)
-	}
+		for _, user := range *users {
+			if dataSourceSlackUserMatch(&user, queryType, queryValue) {
+				configureUserFunc(d, user)
+				return nil
+			}
+		}
 
-	if users == nil {
-		panic(fmt.Errorf("a serious error happened. please create an issue to https://github.com/jmatsu/terraform-provider-slack"))
-	}
-
-	for _, user := range *users {
-		if dataSourceSlackUserMatch(&user, queryType, queryValue) {
-			configureUserFunc(d, user)
-			return nil
+		return diag.Diagnostics{
+			{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("provider cannot find a slack user (%s) by %s", queryValue, queryType),
+				Detail:   fmt.Sprintf("In general, slack username is not reliable and undetermistic so this query type has been deprecated actually. Please use %s or %s to look up a user instead", userQueryTypeEmail, userQueryTypeID),
+			},
 		}
 	}
 
-	return fmt.Errorf("a slack user (%s) is not found", queryValue)
+	return diag.Diagnostics{
+		{
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("%s in query_type is not acceptable", queryType),
+			Detail:   fmt.Sprintf("Either one of %s, %s and %s is allowed", userQueryTypeID, userQueryTypeEmail, userQueryTypeID),
+		},
+	}
 }
 
 func dataSourceSlackUserMatch(user *slack.User, queryType string, queryValue string) bool {
@@ -137,6 +177,8 @@ func dataSourceSlackUserMatch(user *slack.User, queryType string, queryValue str
 		return user.Name == queryValue || user.RealName == queryValue || user.Profile.DisplayName == queryValue
 	case userQueryTypeEmail:
 		return user.Profile.Email == queryValue
+	case userQueryTypeID:
+		return user.ID == queryValue
 	}
 	return false
 }

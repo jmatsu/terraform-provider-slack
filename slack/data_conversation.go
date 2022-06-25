@@ -2,13 +2,15 @@ package slack
 
 import (
 	"context"
+	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"log"
 )
 
 func dataSourceConversation() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSlackConversationRead,
+		ReadContext: dataSlackConversationRead,
 
 		Schema: map[string]*schema.Schema{
 			"channel_id": {
@@ -61,18 +63,22 @@ func dataSourceConversation() *schema.Resource {
 	}
 }
 
-func dataSlackConversationRead(d *schema.ResourceData, meta interface{}) error {
+func dataSlackConversationRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*Team).client
 
 	channelId := d.Get("channel_id").(string)
-
-	ctx := context.WithValue(context.Background(), ctxId, channelId)
 
 	log.Printf("[DEBUG] Reading Conversation: %s", channelId)
 	channel, err := client.GetConversationInfoContext(ctx, channelId, false)
 
 	if err != nil {
-		return err
+		return diag.Diagnostics{
+			{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("the provider cannot read conversation %s", channelId),
+				Detail:   err.Error(),
+			},
+		}
 	}
 
 	d.SetId(channel.ID)
