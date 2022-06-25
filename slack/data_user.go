@@ -25,7 +25,7 @@ func dataSourceSlackUser() *schema.Resource {
 			"query_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validateEnums([]string{userQueryTypeID, userQueryTypeName, userQueryTypeEmail}),
+				ValidateDiagFunc: validateEnums([]string{userQueryTypeID, userQueryTypeName, userQueryTypeEmail}),
 			},
 			"query_value": {
 				Type:     schema.TypeString,

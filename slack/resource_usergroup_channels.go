@@ -83,6 +83,7 @@ func resourceSlackUserGroupChannelsCreate(ctx context.Context, d *schema.Resourc
 func resourceSlackUserGroupChannelsRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*Team).client
 
+	currentId := d.Id()
 	usergroupId := d.Get("usergroup_id").(string)
 	log.Printf("[DEBUG] Reading usergroup channels relation: %s", usergroupId)
 
@@ -90,7 +91,7 @@ func resourceSlackUserGroupChannelsRead(ctx context.Context, d *schema.ResourceD
 		return diag.Diagnostics{
 			{
 				Severity: diag.Error,
-				Summary:  fmt.Sprintf("it's not allowed to change usergroup id (from %s to %s)", d.Id, usergroupId),
+				Summary:  fmt.Sprintf("it's not allowed to change usergroup id (from %s to %s)", currentId, usergroupId),
 				Detail:   "Please move the state or create another resource instead",
 			},
 		}
@@ -144,6 +145,7 @@ func resourceSlackUserGroupChannelsRead(ctx context.Context, d *schema.ResourceD
 func resourceSlackUserGroupChannelsUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*Team).client
 
+	currentId := d.Id()
 	usergroupId := d.Get("usergroup_id").(string)
 	log.Printf("[DEBUG] Updating usergroup channels relation: %s", usergroupId)
 
@@ -151,7 +153,7 @@ func resourceSlackUserGroupChannelsUpdate(ctx context.Context, d *schema.Resourc
 		return diag.Diagnostics{
 			{
 				Severity: diag.Error,
-				Summary:  fmt.Sprintf("it's not allowed to change usergroup id (from %s to %s)", d.Id, usergroupId),
+				Summary:  fmt.Sprintf("it's not allowed to change usergroup id (from %s to %s)", currentId, usergroupId),
 				Detail:   "Please move the state or create another resource instead",
 			},
 		}
@@ -190,15 +192,16 @@ func resourceSlackUserGroupChannelsUpdate(ctx context.Context, d *schema.Resourc
 func resourceSlackUserGroupChannelsDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*Team).client
 
+	currentId := d.Id()
 	usergroupId := d.Get("usergroup_id").(string)
 
 	log.Printf("[DEBUG] Deleting usergroup channels relation: %s", usergroupId)
 
-	if usergroupId != d.Id() {
+	if usergroupId !=currentId {
 		return diag.Diagnostics{
 			{
 				Severity: diag.Error,
-				Summary:  fmt.Sprintf("it's not allowed to change usergroup id (from %s to %s)", d.Id, usergroupId),
+				Summary:  fmt.Sprintf("it's not allowed to change usergroup id (from %s to %s)", currentId, usergroupId),
 				Detail:   "Please move the state or create another resource instead",
 			},
 		}

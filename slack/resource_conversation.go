@@ -120,7 +120,7 @@ func resourceSlackConversationCreate(ctx context.Context, d *schema.ResourceData
 		return diag.Diagnostics{
 			{
 				Severity: diag.Error,
-				Summary:  fmt.Sprintf("provider cannot create a slack conversation (%s, isPrivate = %s)", name, isPrivate),
+				Summary:  fmt.Sprintf("provider cannot create a slack conversation (%s, isPrivate = %t)", name, isPrivate),
 				Detail:   err.Error(),
 			},
 		}

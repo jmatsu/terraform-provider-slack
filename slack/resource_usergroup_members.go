@@ -79,6 +79,7 @@ func resourceSlackUserGroupMembersCreate(ctx context.Context, d *schema.Resource
 func resourceSlackUserGroupMembersRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*Team).client
 
+	currentId := d.Id()
 	usergroupId := d.Get("usergroup_id").(string)
 
 	log.Printf("[DEBUG] Reading usergroup members: %s", usergroupId)
@@ -87,7 +88,7 @@ func resourceSlackUserGroupMembersRead(ctx context.Context, d *schema.ResourceDa
 		return diag.Diagnostics{
 			{
 				Severity: diag.Error,
-				Summary:  fmt.Sprintf("it's not allowed to change usergroup id (from %s to %s)", d.Id, usergroupId),
+				Summary:  fmt.Sprintf("it's not allowed to change usergroup id (from %s to %s)", currentId, usergroupId),
 				Detail:   "Please move the state or create another resource instead",
 			},
 		}
@@ -113,13 +114,14 @@ func resourceSlackUserGroupMembersRead(ctx context.Context, d *schema.ResourceDa
 func resourceSlackUserGroupMembersUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*Team).client
 
+	currentId := d.Id()
 	usergroupId := d.Get("usergroup_id").(string)
 
 	if usergroupId != d.Id() {
 		return diag.Diagnostics{
 			{
 				Severity: diag.Error,
-				Summary:  fmt.Sprintf("it's not allowed to change usergroup id (from %s to %s)", d.Id, usergroupId),
+				Summary:  fmt.Sprintf("it's not allowed to change usergroup id (from %s to %s)", currentId, usergroupId),
 				Detail:   "Please move the state or create another resource instead",
 			},
 		}
@@ -166,13 +168,14 @@ func resourceSlackUserGroupMembersUpdate(ctx context.Context, d *schema.Resource
 func resourceSlackUserGroupMembersDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*Team).client
 
+	currentId := d.Id()
 	usergroupId := d.Get("usergroup_id").(string)
 
 	if usergroupId != d.Id() {
 		return diag.Diagnostics{
 			{
 				Severity: diag.Error,
-				Summary:  fmt.Sprintf("it's not allowed to change usergroup id (from %s to %s)", d.Id, usergroupId),
+				Summary:  fmt.Sprintf("it's not allowed to change usergroup id (from %s to %s)", currentId, usergroupId),
 				Detail:   "Please move the state or create another resource instead",
 			},
 		}

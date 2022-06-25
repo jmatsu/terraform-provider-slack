@@ -3,6 +3,7 @@ package slack
 import (
 	"context"
 	"encoding/json"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/slack-go/slack"
 	"net/http"
@@ -56,10 +57,15 @@ func Test_ResourceUserGroupMembersRead(t *testing.T) {
 		slack.Option(slack.OptionHTTPClient(ts.Client())),
 		slack.OptionAPIURL(ts.URL+"/"))
 
-	team := &Team{slackClient, context.Background()}
+	team := &Team{slackClient}
+	ctx := context.Background()
 
-	if err := resourceSlackUserGroupMembersRead(d, team); err != nil {
-		t.Fatalf("err: %s", err)
+	if diags := resourceSlackUserGroupMembersRead(ctx, d, team); diags.HasError() {
+		for _, d := range diags {
+			if d.Severity == diag.Error {
+				t.Fatalf("err: %s", d.Summary)
+			}
+		}
 	}
 
 	members := d.Get("members").(*schema.Set)
@@ -97,10 +103,15 @@ func Test_ResourceUserGroupMembersCreate(t *testing.T) {
 		slack.Option(slack.OptionHTTPClient(ts.Client())),
 		slack.OptionAPIURL(ts.URL+"/"))
 
-	team := &Team{slackClient, context.Background()}
+	team := &Team{slackClient}
+	ctx := context.Background()
 
-	if err := resourceSlackUserGroupMembersCreate(d, team); err != nil {
-		t.Fatalf("err: %s", err)
+	if diags := resourceSlackUserGroupMembersCreate(ctx, d, team); diags.HasError() {
+		for _, d := range diags {
+			if d.Severity == diag.Error {
+				t.Fatalf("err: %s", d.Summary)
+			}
+		}
 	}
 
 	members := d.Get("members").(*schema.Set)
@@ -152,10 +163,15 @@ func Test_ResourceUserGroupMembersUpdate(t *testing.T) {
 		slack.Option(slack.OptionHTTPClient(ts.Client())),
 		slack.OptionAPIURL(ts.URL+"/"))
 
-	team := &Team{slackClient, context.Background()}
+	team := &Team{slackClient}
+	ctx := context.Background()
 
-	if err := resourceSlackUserGroupMembersUpdate(d, team); err != nil {
-		t.Fatalf("err update usergroup: %s", err)
+	if diags := resourceSlackUserGroupMembersUpdate(ctx, d, team); diags.HasError() {
+		for _, d := range diags {
+			if d.Severity == diag.Error {
+				t.Fatalf("err: %s", d.Summary)
+			}
+		}
 	}
 
 	members := d.Get("members").(*schema.Set)
@@ -191,10 +207,15 @@ func Test_ResourceUserGroupMembersDelete(t *testing.T) {
 		slack.Option(slack.OptionHTTPClient(ts.Client())),
 		slack.OptionAPIURL(ts.URL+"/"))
 
-	team := &Team{slackClient, context.Background()}
+	team := &Team{slackClient}
+	ctx := context.Background()
 
-	if err := resourceSlackUserGroupMembersDelete(d, team); err != nil {
-		t.Fatalf("err update usergroup: %s", err)
+	if diags := resourceSlackUserGroupMembersDelete(ctx, d, team); diags.HasError() {
+		for _, d := range diags {
+			if d.Severity == diag.Error {
+				t.Fatalf("err: %s", d.Summary)
+			}
+		}
 	}
 
 	if d.Id() != "" {
