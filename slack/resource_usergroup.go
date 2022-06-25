@@ -82,8 +82,8 @@ func resourceSlackUserGroupCreate(ctx context.Context, d *schema.ResourceData, m
 		return diag.Diagnostics{
 			{
 				Severity: diag.Error,
-				Summary:  fmt.Sprintf("provider cannot create a slack usergroup (%s)", handle),
-				Detail:   err.Error(),
+				Summary:  fmt.Sprintf("Slack provider couldn't create a slack usergroup (%s) due to *%s*", handle, err.Error()),
+				Detail:   "https://api.slack.com/methods/usergroups.create",
 			},
 		}
 	}
@@ -114,8 +114,8 @@ func resourceSlackUserGroupRead(ctx context.Context, d *schema.ResourceData, met
 			return diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  fmt.Sprintf("provider cannot find slack usergroups"),
-					Detail:   err.Error(),
+					Summary:  fmt.Sprintf("Slack provider couldn't find slack usergroups due to *%s*", err.Error()),
+					Detail:   "https://api.slack.com/methods/usergroups.list",
 				},
 			}
 		}
@@ -135,8 +135,8 @@ func resourceSlackUserGroupRead(ctx context.Context, d *schema.ResourceData, met
 	return diag.Diagnostics{
 		{
 			Severity: diag.Error,
-			Summary:  fmt.Sprintf("provider cannot find a slack usergroup (%s)", id),
-			Detail:   fmt.Sprintf("a usergroup (%s) is not found in usergroups that this token can view", id),
+			Summary:  fmt.Sprintf("Slack provider couldn't find a slack usergroup (%s)", id),
+			Detail:   fmt.Sprintf("a usergroup (%s) is not found in this workspace", id),
 		},
 	}
 }
@@ -168,8 +168,8 @@ func resourceSlackUserGroupUpdate(ctx context.Context, d *schema.ResourceData, m
 		return diag.Diagnostics{
 			{
 				Severity: diag.Error,
-				Summary:  fmt.Sprintf("provider cannot update the slack usergroup (%s)", id),
-				Detail:   err.Error(),
+				Summary:  fmt.Sprintf("Slack provider couldn't update the slack usergroup (%s) due to *%s*", id, err.Error()),
+				Detail:   "https://api.slack.com/methods/usergroups.update",
 			},
 		}
 	}
@@ -189,8 +189,8 @@ func resourceSlackUserGroupDelete(ctx context.Context, d *schema.ResourceData, m
 			return diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  fmt.Sprintf("provider cannot disable the slack usergroup (%s)", id),
-					Detail:   err.Error(),
+					Summary:  fmt.Sprintf("Slack provider couldn't disable the slack usergroup (%s) due to *%s*", id, err.Error()),
+					Detail:   "https://api.slack.com/methods/usergroups.disable",
 				},
 			}
 		}

@@ -85,8 +85,8 @@ func dataSourceSlackUserRead(ctx context.Context, d *schema.ResourceData, meta i
 			return diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  fmt.Sprintf("provider cannot find a slack user (%s) by %s", queryValue, queryType),
-					Detail:   err.Error(),
+					Summary:  fmt.Sprintf("Slack provider couldn't find a slack user (%s) due to *%s*", queryValue, err.Error()),
+					Detail:   "https://api.slack.com/methods/users.info",
 				},
 			}
 		}
@@ -104,8 +104,8 @@ func dataSourceSlackUserRead(ctx context.Context, d *schema.ResourceData, meta i
 			return diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  fmt.Sprintf("provider cannot find a slack user (%s) by %s", queryValue, queryType),
-					Detail:   err.Error(),
+					Summary:  fmt.Sprintf("Slack provider couldn't find a slack user (%s) due to *%s*", queryValue, err.Error()),
+					Detail:   "https://api.slack.com/methods/users.lookupByEmail",
 				},
 			}
 		}
@@ -125,8 +125,8 @@ func dataSourceSlackUserRead(ctx context.Context, d *schema.ResourceData, meta i
 				return diag.Diagnostics{
 					{
 						Severity: diag.Error,
-						Summary:  fmt.Sprintf("provider cannot find a slack user (%s) by %s", queryValue, queryType),
-						Detail:   err.Error(),
+						Summary:  fmt.Sprintf("Slack provider couldn't find a slack user (%s) due to *%s*", queryValue, err.Error()),
+						Detail:   "https://api.slack.com/methods/users.list",
 					},
 				}
 			}
@@ -140,8 +140,8 @@ func dataSourceSlackUserRead(ctx context.Context, d *schema.ResourceData, meta i
 			return diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  fmt.Sprintf("Serious error happened while finding a slack user (%s) by %s", queryValue, queryType),
-					Detail:   "Internal provider error. Please use another query_type or open an issue at https://github.com/jmatsu/terraform-provider-slack",
+					Summary:  fmt.Sprintf("Serious error happened while finding a slack user (%s)", queryValue),
+					Detail:   "Please use another query_type or open an issue at https://github.com/jmatsu/terraform-provider-slack",
 				},
 			}
 		}
@@ -156,8 +156,8 @@ func dataSourceSlackUserRead(ctx context.Context, d *schema.ResourceData, meta i
 		return diag.Diagnostics{
 			{
 				Severity: diag.Error,
-				Summary:  fmt.Sprintf("provider cannot find a slack user (%s) by %s", queryValue, queryType),
-				Detail:   fmt.Sprintf("In general, slack username is not reliable and undetermistic so this query type has been deprecated actually. Please use %s or %s to look up a user instead", userQueryTypeEmail, userQueryTypeID),
+				Summary:  fmt.Sprintf("Slack provider couldn't find a slack user (%s)", queryValue),
+				Detail:   fmt.Sprintf("In general, slack username is not reliable and non-determistic. It's better to use %s or %s to look up a user instead and so we've deprecated this query type actually", userQueryTypeEmail, userQueryTypeID),
 			},
 		}
 	}

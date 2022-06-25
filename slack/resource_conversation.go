@@ -120,8 +120,8 @@ func resourceSlackConversationCreate(ctx context.Context, d *schema.ResourceData
 		return diag.Diagnostics{
 			{
 				Severity: diag.Error,
-				Summary:  fmt.Sprintf("provider cannot create a slack conversation (%s, isPrivate = %t)", name, isPrivate),
-				Detail:   err.Error(),
+				Summary:  fmt.Sprintf("Slack provider couldn't create a slack conversation (%s, isPrivate = %t) due to *%s*", name, isPrivate, err.Error()),
+				Detail:   "https://api.slack.com/methods/conversations.create",
 			},
 		}
 	}
@@ -143,8 +143,8 @@ func resourceSlackConversationRead(ctx context.Context, d *schema.ResourceData, 
 		return diag.Diagnostics{
 			{
 				Severity: diag.Error,
-				Summary:  fmt.Sprintf("provider cannot find a slack conversation (%s)", id),
-				Detail:   err.Error(),
+				Summary:  fmt.Sprintf("Slack provider couldn't find a slack conversation (%s) due to *%s*", id, err.Error()),
+				Detail:   "https://api.slack.com/methods/conversations.info",
 			},
 		}
 	}
@@ -164,8 +164,8 @@ func resourceSlackConversationUpdate(ctx context.Context, d *schema.ResourceData
 		return diag.Diagnostics{
 			{
 				Severity: diag.Error,
-				Summary:  fmt.Sprintf("provider cannot rename a slack conversation (%s) to %s", id, name),
-				Detail:   err.Error(),
+				Summary:  fmt.Sprintf("Slack provider couldn't rename a slack conversation (%s) to %s due to *%s*", id, name, err.Error()),
+				Detail:   "https://api.slack.com/methods/conversations.rename",
 			},
 		}
 	}
@@ -175,8 +175,8 @@ func resourceSlackConversationUpdate(ctx context.Context, d *schema.ResourceData
 			return diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  fmt.Sprintf("provider cannot set a topic of a slack conversation (%s) to %s", id, topic.(string)),
-					Detail:   err.Error(),
+					Summary:  fmt.Sprintf("Slack provider couldn't set a topic of a slack conversation (%s) to %s due to *%s*", id, topic.(string), err.Error()),
+					Detail:   "https://api.slack.com/methods/conversations.setTopic",
 				},
 			}
 		}
@@ -187,8 +187,8 @@ func resourceSlackConversationUpdate(ctx context.Context, d *schema.ResourceData
 			return diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  fmt.Sprintf("provider cannot set a purpose of a slack conversation (%s) to %s", id, purpose.(string)),
-					Detail:   err.Error(),
+					Summary:  fmt.Sprintf("Slack provider couldn't set a purpose of a slack conversation (%s) to %s due to *%s*", id, purpose.(string), err.Error()),
+					Detail:   "https://api.slack.com/methods/conversations.setPurpose",
 				},
 			}
 		}
@@ -201,8 +201,8 @@ func resourceSlackConversationUpdate(ctx context.Context, d *schema.ResourceData
 					return diag.Diagnostics{
 						{
 							Severity: diag.Error,
-							Summary:  fmt.Sprintf("provider cannot archive a slack conversation (%s)", id),
-							Detail:   err.Error(),
+							Summary:  fmt.Sprintf("Slack provider couldn't archive a slack conversation (%s) due to *%s*", id, err.Error()),
+							Detail:   "https://api.slack.com/methods/conversations.archive",
 						},
 					}
 				}
@@ -213,8 +213,8 @@ func resourceSlackConversationUpdate(ctx context.Context, d *schema.ResourceData
 					return diag.Diagnostics{
 						{
 							Severity: diag.Error,
-							Summary:  fmt.Sprintf("provider cannot unarchive a slack conversation (%s)", id),
-							Detail:   err.Error(),
+							Summary:  fmt.Sprintf("Slack provider couldn't unarchive a slack conversation (%s) due to *%s*", id, err.Error()),
+							Detail:   "https://api.slack.com/methods/conversations.unarchive",
 						},
 					}
 				}
@@ -242,8 +242,8 @@ func resourceSlackConversationDelete(ctx context.Context, d *schema.ResourceData
 				return diag.Diagnostics{
 					{
 						Severity: diag.Error,
-						Summary:  fmt.Sprintf("provider cannot archive a slack conversation (%s)", id),
-						Detail:   err.Error(),
+						Summary:  fmt.Sprintf("Slack provider couldn't archive a slack conversation (%s) due to *%s*", id, err.Error()),
+						Detail:   "https://api.slack.com/methods/conversations.archive",
 					},
 				}
 			}

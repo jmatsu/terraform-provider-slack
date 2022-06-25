@@ -69,7 +69,7 @@ func resourceSlackUserGroupChannelsCreate(ctx context.Context, d *schema.Resourc
 		return diag.Diagnostics{
 			{
 				Severity: diag.Error,
-				Summary:  fmt.Sprintf("provider cannot add the default channels to the slack usergroup (%s)", usergroupId),
+				Summary:  fmt.Sprintf("Slack provider couldn't add the default channels to the slack usergroup (%s)", usergroupId),
 				Detail:   err.Error(),
 			},
 		}
@@ -111,8 +111,8 @@ func resourceSlackUserGroupChannelsRead(ctx context.Context, d *schema.ResourceD
 			return diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  fmt.Sprintf("provider cannot read the default channels of the slack usergroup (%s)", usergroupId),
-					Detail:   err.Error(),
+					Summary:  fmt.Sprintf("Slack provider couldn't read the default channels of the slack usergroup (%s) due to *%s*", usergroupId, err.Error()),
+					Detail:   "https://api.slack.com/methods/usergroups.list",
 				},
 			}
 		}
@@ -178,8 +178,8 @@ func resourceSlackUserGroupChannelsUpdate(ctx context.Context, d *schema.Resourc
 		return diag.Diagnostics{
 			{
 				Severity: diag.Error,
-				Summary:  fmt.Sprintf("provider cannot update the default channels of the slack usergroup (%s)", usergroupId),
-				Detail:   err.Error(),
+				Summary:  fmt.Sprintf("Slack provider couldn't update the default channels of the slack usergroup (%s) due to *%s*", usergroupId, err.Error()),
+				Detail:   "https://api.slack.com/methods/usergroups.update",
 			},
 		}
 	}
@@ -218,8 +218,8 @@ func resourceSlackUserGroupChannelsDelete(ctx context.Context, d *schema.Resourc
 		return diag.Diagnostics{
 			{
 				Severity: diag.Error,
-				Summary:  fmt.Sprintf("provider cannot remove all default channels from the slack usergroup (%s)", usergroupId),
-				Detail:   err.Error(),
+				Summary:  fmt.Sprintf("Slack provider couldn't remove all default channels from the slack usergroup (%s) due to *%s*", usergroupId, err.Error()),
+				Detail:   "https://api.slack.com/methods/usergroups.update",
 			},
 		}
 	}

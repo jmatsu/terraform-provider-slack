@@ -75,8 +75,8 @@ func dataSlackConversationRead(ctx context.Context, d *schema.ResourceData, meta
 		return diag.Diagnostics{
 			{
 				Severity: diag.Error,
-				Summary:  fmt.Sprintf("the provider cannot read conversation %s", channelId),
-				Detail:   err.Error(),
+				Summary:  fmt.Sprintf("Slack provider couldn't read conversation %s due to *%s*", channelId, err.Error()),
+				Detail:   "https://api.slack.com/methods/conversations.info",
 			},
 		}
 	}
