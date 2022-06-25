@@ -1,53 +1,39 @@
-# https://github.com/hashicorp/terraform-provider-scaffolding/blob/7f8faf519e4fba622fd4f8deb7163b669d9d8a9d/.github/workflows/release.yml
-# This GitHub action can publish assets for release when a tag is created.
-# Currently its setup to run on any tag that matches the pattern "v*" (ie. v0.1.0).
-#
-# This uses an action (paultyng/ghaction-import-gpg) that assumes you set your 
-# private key in the `GPG_PRIVATE_KEY` secret and passphrase in the `PASSPHRASE`
-# secret. If you would rather own your own GPG handling, please fork this action
-# or use an alternative one for key handling.
-#
-# You will need to pass the `--batch` flag to `gpg` in your signing step 
-# in `goreleaser` to indicate this is being used in a non-interactive mode.
-#
 name: release
 on:
   push:
     tags:
       - 'v*'
 jobs:
-  goreleaser:
+  test:
+    timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
-      -
-        name: Checkout
-        uses: actions/checkout@v3
-      -
-        name: Unshallow
-        run: git fetch --prune --unshallow
-      -
-        name: Set up Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-go
+      - run: exec_test
+  goreleaser:
+    needs:
+      - test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v3
         with:
-          go-version: 1.16
-      -
-        name: Import GPG key
-        id: import_gpg
+          depth: 0
+      - uses: ./.github/actions/setup-go
+      - id: import_gpg
         uses: crazy-max/ghaction-import-gpg@v5
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
-      -
-        name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v3
+      - uses: goreleaser/goreleaser-action@v3
         with:
           version: latest
           args: release --rm-dist
         env:
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      -
-        uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v3
         with:
           name: providers
           path: dist/*
