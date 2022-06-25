@@ -3,6 +3,7 @@ package slack
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/slack-go/slack"
@@ -21,13 +22,13 @@ var validateConversationActionOnDestroyValue = validation.StringInSlice([]string
 
 func resourceSlackConversation() *schema.Resource {
 	return &schema.Resource{
-		Read:   resourceSlackConversationRead,
-		Create: resourceSlackConversationCreate,
-		Update: resourceSlackConversationUpdate,
-		Delete: resourceSlackConversationDelete,
+		ReadContext:   resourceSlackConversationRead,
+		CreateContext: resourceSlackConversationCreate,
+		UpdateContext: resourceSlackConversationUpdate,
+		DeleteContext: resourceSlackConversationDelete,
 
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
+			StateContext: schema.ImportStatePassthroughContext,
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -106,19 +107,23 @@ func configureSlackConversation(d *schema.ResourceData, channel *slack.Channel) 
 	//_ = d.Set("latest", channel.Name)
 }
 
-func resourceSlackConversationCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceSlackConversationCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*Team).client
 
 	name := d.Get("name").(string)
 	isPrivate := d.Get("is_private").(bool)
 
-	ctx := context.Background()
-
 	log.Printf("[DEBUG] Creating Conversation: %s", name)
 	channel, err := client.CreateConversationContext(ctx, name, isPrivate)
 
 	if err != nil {
-		return err
+		return diag.Diagnostics{
+			{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("provider cannot create a slack conversation (%s, isPrivate = %s)", name, isPrivate),
+				Detail:   err.Error(),
+			},
+		}
 	}
 
 	configureSlackConversation(d, channel)
@@ -126,17 +131,22 @@ func resourceSlackConversationCreate(d *schema.ResourceData, meta interface{}) e
 	return nil
 }
 
-func resourceSlackConversationRead(d *schema.ResourceData, meta interface{}) error {
+func resourceSlackConversationRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*Team).client
 
-	ctx := context.WithValue(context.Background(), ctxId, d.Id())
 	id := d.Id()
 
 	log.Printf("[DEBUG] Reading Conversation: %s", d.Id())
 	channel, err := client.GetConversationInfoContext(ctx, id, false)
 
 	if err != nil {
-		return err
+		return diag.Diagnostics{
+			{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("provider cannot find a slack conversation (%s)", id),
+				Detail:   err.Error(),
+			},
+		}
 	}
 
 	configureSlackConversation(d, channel)
@@ -144,25 +154,43 @@ func resourceSlackConversationRead(d *schema.ResourceData, meta interface{}) err
 	return nil
 }
 
-func resourceSlackConversationUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceSlackConversationUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*Team).client
 
-	ctx := context.WithValue(context.Background(), ctxId, d.Id())
 	id := d.Id()
+	name := d.Get("name").(string)
 
-	if _, err := client.RenameConversationContext(ctx, id, d.Get("name").(string)); err != nil {
-		return err
+	if _, err := client.RenameConversationContext(ctx, id, name); err != nil {
+		return diag.Diagnostics{
+			{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("provider cannot rename a slack conversation (%s) to %s", id, name),
+				Detail:   err.Error(),
+			},
+		}
 	}
 
 	if topic, ok := d.GetOk("topic"); ok {
 		if _, err := client.SetTopicOfConversationContext(ctx, id, topic.(string)); err != nil {
-			return err
+			return diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  fmt.Sprintf("provider cannot set a topic of a slack conversation (%s) to %s", id, topic.(string)),
+					Detail:   err.Error(),
+				},
+			}
 		}
 	}
 
 	if purpose, ok := d.GetOk("purpose"); ok {
 		if _, err := client.SetPurposeOfConversationContext(ctx, id, purpose.(string)); err != nil {
-			return err
+			return diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  fmt.Sprintf("provider cannot set a purpose of a slack conversation (%s) to %s", id, purpose.(string)),
+					Detail:   err.Error(),
+				},
+			}
 		}
 	}
 
@@ -170,25 +198,36 @@ func resourceSlackConversationUpdate(d *schema.ResourceData, meta interface{}) e
 		if isArchived.(bool) {
 			if err := client.ArchiveConversationContext(ctx, id); err != nil {
 				if err.Error() != "already_archived" {
-					return err
+					return diag.Diagnostics{
+						{
+							Severity: diag.Error,
+							Summary:  fmt.Sprintf("provider cannot archive a slack conversation (%s)", id),
+							Detail:   err.Error(),
+						},
+					}
 				}
 			}
 		} else {
 			if err := client.UnArchiveConversationContext(ctx, id); err != nil {
 				if err.Error() != "not_archived" {
-					return err
+					return diag.Diagnostics{
+						{
+							Severity: diag.Error,
+							Summary:  fmt.Sprintf("provider cannot unarchive a slack conversation (%s)", id),
+							Detail:   err.Error(),
+						},
+					}
 				}
 			}
 		}
 	}
 
-	return resourceSlackConversationRead(d, meta)
+	return resourceSlackConversationRead(ctx, d, meta)
 }
 
-func resourceSlackConversationDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceSlackConversationDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*Team).client
 
-	ctx := context.WithValue(context.Background(), ctxId, d.Id())
 	id := d.Id()
 
 	action := d.Get("action_on_destroy").(string)
@@ -200,11 +239,23 @@ func resourceSlackConversationDelete(d *schema.ResourceData, meta interface{}) e
 		log.Printf("[DEBUG] Deleting(archive) Conversation: %s (%s)", id, d.Get("name"))
 		if err := client.ArchiveConversationContext(ctx, id); err != nil {
 			if err.Error() != "already_archived" {
-				return err
+				return diag.Diagnostics{
+					{
+						Severity: diag.Error,
+						Summary:  fmt.Sprintf("provider cannot archive a slack conversation (%s)", id),
+						Detail:   err.Error(),
+					},
+				}
 			}
 		}
 	default:
-		return fmt.Errorf("unknown action was provided. (%s)", action)
+		return diag.Diagnostics{
+			{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("%s in action_on_destroy is not acceptable", action),
+				Detail:   fmt.Sprintf("Either one of %s and %s is allowed", conversationActionOnDestroyNone, conversationActionOnDestroyArchive),
+			},
+		}
 	}
 
 	d.SetId("")
