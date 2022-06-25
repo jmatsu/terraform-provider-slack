@@ -2,7 +2,7 @@ package slack
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func validateEnums(values []string) schema.SchemaValidateFunc {
