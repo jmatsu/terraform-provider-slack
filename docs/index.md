@@ -17,4 +17,4 @@ description: |-
 
 ### Required
 
-- **token** (String) The OAuth token used to connect to Slack.
+- `token` (String) The OAuth token used to connect to Slack.

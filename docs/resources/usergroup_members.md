@@ -17,11 +17,11 @@ description: |-
 
 ### Required
 
-- **members** (Set of String)
-- **usergroup_id** (String)
+- `members` (Set of String)
+- `usergroup_id` (String)
 
-### Optional
+### Read-Only
 
-- **id** (String) The ID of this resource.
+- `id` (String) The ID of this resource.
 
 

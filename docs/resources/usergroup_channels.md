@@ -17,11 +17,11 @@ description: |-
 
 ### Required
 
-- **channels** (List of String)
-- **usergroup_id** (String)
+- `channels` (Set of String)
+- `usergroup_id` (String)
 
-### Optional
+### Read-Only
 
-- **id** (String) The ID of this resource.
+- `id` (String) The ID of this resource.
 
 

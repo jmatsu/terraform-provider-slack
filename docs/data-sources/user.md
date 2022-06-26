@@ -17,20 +17,17 @@ description: |-
 
 ### Required
 
-- **query_type** (String)
-- **query_value** (String)
-
-### Optional
-
-- **id** (String) The ID of this resource.
+- `query_type` (String)
+- `query_value` (String)
 
 ### Read-Only
 
-- **has_2fa** (Boolean)
-- **is_admin** (Boolean)
-- **is_bot** (Boolean)
-- **is_owner** (Boolean)
-- **name** (String)
-- **real_name** (String)
+- `has_2fa` (Boolean)
+- `id` (String) The ID of this resource.
+- `is_admin` (Boolean)
+- `is_bot` (Boolean)
+- `is_owner` (Boolean)
+- `name` (String)
+- `real_name` (String)
 
 
