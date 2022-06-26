@@ -7,7 +7,7 @@ func Test_Client(t *testing.T) {
 		Token: "test token",
 	}
 
-	client, err := config.Client()
+	client, err := config.ProviderContext()
 
 	if err != nil {
 		t.Fatal(err)

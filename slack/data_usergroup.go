@@ -6,7 +6,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/slack-go/slack"
-	"log"
 )
 
 func dataSourceUserGroup() *schema.Resource {
@@ -44,11 +43,16 @@ func dataSourceUserGroup() *schema.Resource {
 }
 
 func dataSlackUserGroupRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*Team).client
-
 	usergroupId := d.Get("usergroup_id").(string)
 
-	log.Printf("[DEBUG] Reading usergroup: %s", usergroupId)
+	client := meta.(*Team).client
+	logger := meta.(*Team).logger.withTags(map[string]interface{}{
+		"data_resource": "slack_usergroup",
+		"usergroup_id":  usergroupId,
+	})
+
+	logger.trace(ctx, "Start reading a usergroup")
+
 	groups, err := client.GetUserGroupsContext(ctx, func(params *slack.GetUserGroupsParams) {
 		params.IncludeUsers = false
 		params.IncludeCount = false
@@ -63,6 +67,8 @@ func dataSlackUserGroupRead(ctx context.Context, d *schema.ResourceData, meta in
 				Detail:   "https://api.slack.com/methods/usergroups.list",
 			},
 		}
+	} else {
+		logger.trace(ctx, "Got a response from Slack api")
 	}
 
 	for _, group := range groups {
@@ -73,6 +79,8 @@ func dataSlackUserGroupRead(ctx context.Context, d *schema.ResourceData, meta in
 			_ = d.Set("description", group.Description)
 			_ = d.Set("auto_type", group.AutoType)
 			_ = d.Set("team_id", group.TeamID)
+
+			logger.debug(ctx, "UserGroup @%s", d.Get("handle").(string))
 			return nil
 		}
 	}

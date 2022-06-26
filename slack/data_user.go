@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"log"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/slack-go/slack"
 )
@@ -63,6 +61,13 @@ func dataSourceSlackUserRead(ctx context.Context, d *schema.ResourceData, meta i
 	queryType := d.Get("query_type").(string)
 	queryValue := d.Get("query_value").(string)
 
+	client := meta.(*Team).client
+	logger := meta.(*Team).logger.withTags(map[string]interface{}{
+		"data_resource": "slack_user",
+		"query_type":    queryType,
+		"query_value":   queryValue,
+	})
+
 	configureUserFunc := func(d *schema.ResourceData, user slack.User) {
 		d.SetId(user.ID)
 		_ = d.Set("name", user.Name)
@@ -71,13 +76,13 @@ func dataSourceSlackUserRead(ctx context.Context, d *schema.ResourceData, meta i
 		_ = d.Set("is_owner", user.IsOwner)
 		_ = d.Set("is_bot", user.IsBot)
 		_ = d.Set("has_2fa", user.Has2FA)
+
+		logger.debug(ctx, "User #%s (isBot = %t)", d.Get("name").(string), d.Get("is_bot").(bool))
 	}
 
-	log.Printf("[INFO] Refreshing Slack User: %s (finding by %s)", queryValue, queryType)
-
-	client := meta.(*Team).client
-
 	if queryType == userQueryTypeID {
+		logger.trace(ctx, "Start reading the slack user by user_id")
+
 		// https://api.slack.com/docs/rate-limits#tier_t4
 		user, err := client.GetUserInfoContext(ctx, queryValue)
 
@@ -89,6 +94,8 @@ func dataSourceSlackUserRead(ctx context.Context, d *schema.ResourceData, meta i
 					Detail:   "https://api.slack.com/methods/users.info",
 				},
 			}
+		} else {
+			logger.trace(ctx, "Got a response from Slack api")
 		}
 
 		configureUserFunc(d, *user)
@@ -96,6 +103,8 @@ func dataSourceSlackUserRead(ctx context.Context, d *schema.ResourceData, meta i
 	}
 
 	if queryType == userQueryTypeEmail {
+		logger.trace(ctx, "Start reading the slack user by email")
+
 		// https://api.slack.com/methods/users.lookupByEmail
 		// https://api.slack.com/docs/rate-limits#tier_t3
 		user, err := client.GetUserByEmailContext(ctx, queryValue)
@@ -108,6 +117,8 @@ func dataSourceSlackUserRead(ctx context.Context, d *schema.ResourceData, meta i
 					Detail:   "https://api.slack.com/methods/users.lookupByEmail",
 				},
 			}
+		} else {
+			logger.trace(ctx, "Got a response from Slack api")
 		}
 
 		configureUserFunc(d, *user)
@@ -115,6 +126,8 @@ func dataSourceSlackUserRead(ctx context.Context, d *schema.ResourceData, meta i
 	}
 
 	if queryType == userQueryTypeName {
+		logger.trace(ctx, "Start reading the slack user by user_name")
+
 		// Use a cache for users api call because the limitation is stricter than user.info
 		var users *[]slack.User
 
@@ -129,6 +142,8 @@ func dataSourceSlackUserRead(ctx context.Context, d *schema.ResourceData, meta i
 						Detail:   "https://api.slack.com/methods/users.list",
 					},
 				}
+			} else {
+				logger.trace(ctx, "Got a response from Slack api")
 			}
 
 			users = &tempUsers
@@ -148,6 +163,8 @@ func dataSourceSlackUserRead(ctx context.Context, d *schema.ResourceData, meta i
 
 		for _, user := range *users {
 			if dataSourceSlackUserMatch(&user, queryType, queryValue) {
+				logger.debug(ctx, "Found a user")
+
 				configureUserFunc(d, user)
 				return nil
 			}
@@ -161,6 +178,8 @@ func dataSourceSlackUserRead(ctx context.Context, d *schema.ResourceData, meta i
 			},
 		}
 	}
+
+	logger.error(ctx, "this flow is an unexpected")
 
 	return diag.Diagnostics{
 		{
