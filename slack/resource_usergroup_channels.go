@@ -6,7 +6,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/slack-go/slack"
-	"log"
 )
 
 func resourceSlackUserGroupChannels() *schema.Resource {
@@ -39,16 +38,23 @@ func resourceSlackUserGroupChannels() *schema.Resource {
 	}
 }
 
-func configureSlackUserGroupChannels(d *schema.ResourceData, userGroup slack.UserGroup) {
+func configureSlackUserGroupChannels(ctx context.Context, logger *Logger, d *schema.ResourceData, userGroup slack.UserGroup) {
 	d.SetId(userGroup.ID)
 	_ = d.Set("channels", append(userGroup.Prefs.Channels, userGroup.Prefs.Groups...))
+
+	logger.debug(ctx, "Configured usergroups' default channels")
 }
 
 func resourceSlackUserGroupChannelsCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*Team).client
-
 	usergroupId := d.Get("usergroup_id").(string)
-	log.Printf("[DEBUG] Creating usergroup channels relation: %s", usergroupId)
+
+	client := meta.(*Team).client
+	logger := meta.(*Team).logger.withTags(map[string]interface{}{
+		"resource":     "slack_conversation",
+		"usergroup_id": usergroupId,
+	})
+
+	logger.trace(ctx, "Start creating the default channels")
 
 	iChannels := d.Get("channels").(*schema.Set).List()
 	channelsIds := make([]string, len(iChannels))
@@ -75,17 +81,23 @@ func resourceSlackUserGroupChannelsCreate(ctx context.Context, d *schema.Resourc
 		}
 	}
 
-	configureSlackUserGroupChannels(d, userGroup)
+	configureSlackUserGroupChannels(ctx, logger, d, userGroup)
 
 	return nil
 }
 
 func resourceSlackUserGroupChannelsRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*Team).client
-
 	currentId := d.Id()
+
+	client := meta.(*Team).client
+	logger := meta.(*Team).logger.withTags(map[string]interface{}{
+		"resource":     "slack_conversation",
+		"usergroup_id": currentId,
+	})
+
 	usergroupId := d.Get("usergroup_id").(string)
-	log.Printf("[DEBUG] Reading usergroup channels relation: %s", usergroupId)
+
+	logger.trace(ctx, "Start reading default channels of the usergroup")
 
 	if usergroupId != d.Id() {
 		return diag.Diagnostics{
@@ -112,9 +124,11 @@ func resourceSlackUserGroupChannelsRead(ctx context.Context, d *schema.ResourceD
 				{
 					Severity: diag.Error,
 					Summary:  fmt.Sprintf("Slack provider couldn't read the default channels of the slack usergroup (%s) due to *%s*", usergroupId, err.Error()),
-					Detail:   "https://api.slack.com/methods/usergroups.list",
+					Detail:   fmt.Sprintf("Please refer to %s for the details.", "https://api.slack.com/methods/usergroups.list"),
 				},
 			}
+		} else {
+			logger.trace(ctx, "Got a response from Slack API")
 		}
 
 		userGroups = &tempUserGroups
@@ -134,7 +148,7 @@ func resourceSlackUserGroupChannelsRead(ctx context.Context, d *schema.ResourceD
 
 	for _, userGroup := range *userGroups {
 		if userGroup.ID == usergroupId {
-			configureSlackUserGroupChannels(d, userGroup)
+			configureSlackUserGroupChannels(ctx, logger, d, userGroup)
 			return nil
 		}
 	}
@@ -143,11 +157,17 @@ func resourceSlackUserGroupChannelsRead(ctx context.Context, d *schema.ResourceD
 }
 
 func resourceSlackUserGroupChannelsUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*Team).client
-
 	currentId := d.Id()
+
+	client := meta.(*Team).client
+	logger := meta.(*Team).logger.withTags(map[string]interface{}{
+		"resource":     "slack_conversation",
+		"usergroup_id": currentId,
+	})
+
+	logger.trace(ctx, "Start updating default channels of the usergroup")
+
 	usergroupId := d.Get("usergroup_id").(string)
-	log.Printf("[DEBUG] Updating usergroup channels relation: %s", usergroupId)
 
 	if usergroupId != d.Id() {
 		return diag.Diagnostics{
@@ -179,23 +199,28 @@ func resourceSlackUserGroupChannelsUpdate(ctx context.Context, d *schema.Resourc
 			{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("Slack provider couldn't update the default channels of the slack usergroup (%s) due to *%s*", usergroupId, err.Error()),
-				Detail:   "https://api.slack.com/methods/usergroups.update",
+				Detail:   fmt.Sprintf("Please refer to %s for the details.", "https://api.slack.com/methods/usergroups.update"),
 			},
 		}
 	}
 
-	configureSlackUserGroupChannels(d, userGroup)
+	configureSlackUserGroupChannels(ctx, logger, d, userGroup)
 
 	return nil
 }
 
 func resourceSlackUserGroupChannelsDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*Team).client
-
 	currentId := d.Id()
-	usergroupId := d.Get("usergroup_id").(string)
 
-	log.Printf("[DEBUG] Deleting usergroup channels relation: %s", usergroupId)
+	client := meta.(*Team).client
+	logger := meta.(*Team).logger.withTags(map[string]interface{}{
+		"resource":     "slack_conversation",
+		"usergroup_id": currentId,
+	})
+
+	logger.trace(ctx, "Start destroying default channels of the usergroup")
+
+	usergroupId := d.Get("usergroup_id").(string)
 
 	if usergroupId != currentId {
 		return diag.Diagnostics{
@@ -214,17 +239,20 @@ func resourceSlackUserGroupChannelsDelete(ctx context.Context, d *schema.Resourc
 		},
 	}
 
+	// 0 default channels are allowed by spec
 	if _, err := client.UpdateUserGroupContext(ctx, *params); err != nil {
 		return diag.Diagnostics{
 			{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("Slack provider couldn't remove all default channels from the slack usergroup (%s) due to *%s*", usergroupId, err.Error()),
-				Detail:   "https://api.slack.com/methods/usergroups.update",
+				Detail:   fmt.Sprintf("Please refer to %s for the details.", "https://api.slack.com/methods/usergroups.update"),
 			},
 		}
 	}
 
 	d.SetId("")
+
+	logger.debug(ctx, "Cleared the resource id of this usergourps' default channels resource so it's going to be removed from the state")
 
 	return nil
 }

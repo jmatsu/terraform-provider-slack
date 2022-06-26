@@ -47,8 +47,8 @@ func dataSlackUserGroupRead(ctx context.Context, d *schema.ResourceData, meta in
 
 	client := meta.(*Team).client
 	logger := meta.(*Team).logger.withTags(map[string]interface{}{
-		"data_resource": "slack_usergroup",
-		"usergroup_id":  usergroupId,
+		"data":         "slack_usergroup",
+		"usergroup_id": usergroupId,
 	})
 
 	logger.trace(ctx, "Start reading a usergroup")
@@ -64,7 +64,7 @@ func dataSlackUserGroupRead(ctx context.Context, d *schema.ResourceData, meta in
 			{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("provicer cannot find a usergroup (%s) due to *%s*", usergroupId, err.Error()),
-				Detail:   "https://api.slack.com/methods/usergroups.list",
+				Detail:   fmt.Sprintf("Please refer to %s for the details.", "https://api.slack.com/methods/usergroups.list"),
 			},
 		}
 	} else {

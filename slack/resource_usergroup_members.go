@@ -6,7 +6,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/slack-go/slack"
-	"log"
 	"strings"
 )
 
@@ -40,15 +39,23 @@ func resourceSlackUserGroupMembers() *schema.Resource {
 	}
 }
 
-func configureSlackUserGroupMembers(d *schema.ResourceData, userGroup slack.UserGroup) {
+func configureSlackUserGroupMembers(ctx context.Context, logger *Logger, d *schema.ResourceData, userGroup slack.UserGroup) {
 	d.SetId(userGroup.ID)
 	_ = d.Set("members", userGroup.Users)
+
+	logger.debug(ctx, "Configured channel members")
 }
 
 func resourceSlackUserGroupMembersCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*Team).client
-
 	usergroupId := d.Get("usergroup_id").(string)
+
+	client := meta.(*Team).client
+	logger := meta.(*Team).logger.withTags(map[string]interface{}{
+		"resource":     "slack_conversation",
+		"usergroup_id": usergroupId,
+	})
+
+	logger.trace(ctx, "Start creating members of the usergroup")
 
 	iMembers := d.Get("members").(*schema.Set)
 	userIds := make([]string, len(iMembers.List()))
@@ -57,8 +64,6 @@ func resourceSlackUserGroupMembersCreate(ctx context.Context, d *schema.Resource
 	}
 	userIdParam := strings.Join(userIds, ",")
 
-	log.Printf("[DEBUG] Creating usergroup members: %s (%s)", usergroupId, userIdParam)
-
 	userGroup, err := client.UpdateUserGroupMembersContext(ctx, usergroupId, userIdParam)
 
 	if err != nil {
@@ -66,23 +71,28 @@ func resourceSlackUserGroupMembersCreate(ctx context.Context, d *schema.Resource
 			{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("Slack provider couldn't attach members of the slack usergroup (%s) due to *%s*", usergroupId, err.Error()),
-				Detail:   "https://api.slack.com/methods/usergroups.users.update",
+				Detail:   fmt.Sprintf("Please refer to %s for the details.", "https://api.slack.com/methods/usergroups.users.update"),
 			},
 		}
 	}
 
-	configureSlackUserGroupMembers(d, userGroup)
+	configureSlackUserGroupMembers(ctx, logger, d, userGroup)
 
 	return nil
 }
 
 func resourceSlackUserGroupMembersRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*Team).client
-
 	currentId := d.Id()
-	usergroupId := d.Get("usergroup_id").(string)
 
-	log.Printf("[DEBUG] Reading usergroup members: %s", usergroupId)
+	client := meta.(*Team).client
+	logger := meta.(*Team).logger.withTags(map[string]interface{}{
+		"resource":     "slack_conversation",
+		"usergroup_id": currentId,
+	})
+
+	logger.trace(ctx, "Start reading the usergroup members")
+
+	usergroupId := d.Get("usergroup_id").(string)
 
 	if usergroupId != d.Id() {
 		return diag.Diagnostics{
@@ -101,20 +111,29 @@ func resourceSlackUserGroupMembersRead(ctx context.Context, d *schema.ResourceDa
 			{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("Slack provider couldn't read members of the slack usergroup (%s) due to *%s*", usergroupId, err.Error()),
-				Detail:   "https://api.slack.com/methods/usergroups.users.list",
+				Detail:   fmt.Sprintf("Please refer to %s for the details.", "https://api.slack.com/methods/usergroups.users.list"),
 			},
 		}
 	}
 
 	_ = d.Set("members", members)
 
+	logger.debug(ctx, "Configured members of the usergroup")
+
 	return nil
 }
 
 func resourceSlackUserGroupMembersUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*Team).client
-
 	currentId := d.Id()
+
+	client := meta.(*Team).client
+	logger := meta.(*Team).logger.withTags(map[string]interface{}{
+		"resource":     "slack_conversation",
+		"usergroup_id": currentId,
+	})
+
+	logger.trace(ctx, "Start updating members of the usergroup")
+
 	usergroupId := d.Get("usergroup_id").(string)
 
 	if usergroupId != d.Id() {
@@ -127,6 +146,7 @@ func resourceSlackUserGroupMembersUpdate(ctx context.Context, d *schema.Resource
 		}
 	}
 
+	logger.debug(ctx, "Enable the usergroup first because disabled usergroups reject updates")
 	_, err := client.EnableUserGroupContext(ctx, usergroupId)
 
 	if err != nil && err.Error() != "already_enabled" {
@@ -134,7 +154,7 @@ func resourceSlackUserGroupMembersUpdate(ctx context.Context, d *schema.Resource
 			{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("Slack provider couldn't activate the slack usergroup (%s) to update members due to *%s*", usergroupId, err.Error()),
-				Detail:   "https://api.slack.com/methods/usergroups.users.enable",
+				Detail:   fmt.Sprintf("Please refer to %s for the details.", "https://api.slack.com/methods/usergroups.users.enable"),
 			},
 		}
 	}
@@ -146,8 +166,6 @@ func resourceSlackUserGroupMembersUpdate(ctx context.Context, d *schema.Resource
 	}
 	userIdParam := strings.Join(userIds, ",")
 
-	log.Printf("[DEBUG] Updating usergroup members: %s (%s)", usergroupId, userIdParam)
-
 	userGroup, err := client.UpdateUserGroupMembersContext(ctx, usergroupId, userIdParam)
 
 	if err != nil {
@@ -155,20 +173,27 @@ func resourceSlackUserGroupMembersUpdate(ctx context.Context, d *schema.Resource
 			{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("Slack provider couldn't update members of the slack usergroup (%s) due to *%s*", usergroupId, err.Error()),
-				Detail:   "https://api.slack.com/methods/usergroups.users.update",
+				Detail:   fmt.Sprintf("Please refer to %s for the details.", "https://api.slack.com/methods/usergroups.users.update"),
 			},
 		}
 	}
 
-	configureSlackUserGroupMembers(d, userGroup)
+	configureSlackUserGroupMembers(ctx, logger, d, userGroup)
 
 	return nil
 }
 
 func resourceSlackUserGroupMembersDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*Team).client
-
 	currentId := d.Id()
+
+	client := meta.(*Team).client
+	logger := meta.(*Team).logger.withTags(map[string]interface{}{
+		"resource":     "slack_conversation",
+		"usergroup_id": currentId,
+	})
+
+	logger.trace(ctx, "Start destroying members of the usergroup")
+
 	usergroupId := d.Get("usergroup_id").(string)
 
 	if usergroupId != d.Id() {
@@ -181,7 +206,7 @@ func resourceSlackUserGroupMembersDelete(ctx context.Context, d *schema.Resource
 		}
 	}
 
-	log.Printf("[DEBUG] Reading usergroup members: %s", usergroupId)
+	logger.debug(ctx, "A usergroup that has no members cannot be created by web API so just disable it")
 
 	// Cannot use "" as a member parameter, so let me disable it
 	if _, err := client.DisableUserGroupContext(ctx, usergroupId); err != nil {
@@ -189,12 +214,14 @@ func resourceSlackUserGroupMembersDelete(ctx context.Context, d *schema.Resource
 			{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("Slack provider couldn't disable the slack usergroup (%s) due to *%s*", usergroupId, err.Error()),
-				Detail:   "https://api.slack.com/methods/usergroups.disable",
+				Detail:   fmt.Sprintf("Please refer to %s for the details.", "https://api.slack.com/methods/usergroups.disable"),
 			},
 		}
 	}
 
 	d.SetId("")
+
+	logger.debug(ctx, "Cleared the resource id of this usergroup members' resource so it's going to be removed from the state")
 
 	return nil
 }

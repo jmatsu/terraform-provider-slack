@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/slack-go/slack"
-	"log"
 )
 
 const (
@@ -83,7 +82,7 @@ func resourceSlackConversation() *schema.Resource {
 	}
 }
 
-func configureSlackConversation(d *schema.ResourceData, channel *slack.Channel) {
+func configureSlackConversation(ctx context.Context, logger *Logger, d *schema.ResourceData, channel *slack.Channel) {
 	d.SetId(channel.ID)
 	_ = d.Set("name", channel.Name)
 	_ = d.Set("topic", channel.Topic.Value)
@@ -105,15 +104,23 @@ func configureSlackConversation(d *schema.ResourceData, channel *slack.Channel) 
 	//_ = d.Set("unread_count_display", channel.UnreadCountDisplay)
 	//_ = d.Set("last_read", channel.Name)
 	//_ = d.Set("latest", channel.Name)
+
+	logger.debug(ctx, "Configured Conversation #%s (isArchived = %t)", d.Id(), d.Get("is_archived").(bool))
 }
 
 func resourceSlackConversationCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*Team).client
-
 	name := d.Get("name").(string)
 	isPrivate := d.Get("is_private").(bool)
 
-	log.Printf("[DEBUG] Creating Conversation: %s", name)
+	client := meta.(*Team).client
+	logger := meta.(*Team).logger.withTags(map[string]interface{}{
+		"resource":          "slack_conversation",
+		"conversation_name": name,
+		"is_private":        isPrivate,
+	})
+
+	logger.trace(ctx, "Start creating a conversation")
+
 	channel, err := client.CreateConversationContext(ctx, name, isPrivate)
 
 	if err != nil {
@@ -121,22 +128,29 @@ func resourceSlackConversationCreate(ctx context.Context, d *schema.ResourceData
 			{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("Slack provider couldn't create a slack conversation (%s, isPrivate = %t) due to *%s*", name, isPrivate, err.Error()),
-				Detail:   "https://api.slack.com/methods/conversations.create",
+				Detail:   fmt.Sprintf("Please refer to %s for the details.", "https://api.slack.com/methods/conversations.create"),
 			},
 		}
+	} else {
+		logger.trace(ctx, "Got a response from Slack API")
 	}
 
-	configureSlackConversation(d, channel)
+	configureSlackConversation(ctx, logger, d, channel)
 
 	return nil
 }
 
 func resourceSlackConversationRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*Team).client
-
 	id := d.Id()
 
-	log.Printf("[DEBUG] Reading Conversation: %s", d.Id())
+	client := meta.(*Team).client
+	logger := meta.(*Team).logger.withTags(map[string]interface{}{
+		"resource":        "slack_conversation",
+		"conversation_id": id,
+	})
+
+	logger.trace(ctx, "Start reading the conversation")
+
 	channel, err := client.GetConversationInfoContext(ctx, id, false)
 
 	if err != nil {
@@ -144,20 +158,29 @@ func resourceSlackConversationRead(ctx context.Context, d *schema.ResourceData, 
 			{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("Slack provider couldn't find a slack conversation (%s) due to *%s*", id, err.Error()),
-				Detail:   "https://api.slack.com/methods/conversations.info",
+				Detail:   fmt.Sprintf("Please refer to %s for the details.", "https://api.slack.com/methods/conversations.info"),
 			},
 		}
+	} else {
+		logger.trace(ctx, "Got a response from Slack API")
 	}
 
-	configureSlackConversation(d, channel)
+	configureSlackConversation(ctx, logger, d, channel)
 
 	return nil
 }
 
 func resourceSlackConversationUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*Team).client
-
 	id := d.Id()
+
+	client := meta.(*Team).client
+	logger := meta.(*Team).logger.withTags(map[string]interface{}{
+		"resource":        "slack_conversation",
+		"conversation_id": id,
+	})
+
+	// TODO check if it's changed or not to reduce api calls
+
 	name := d.Get("name").(string)
 
 	if _, err := client.RenameConversationContext(ctx, id, name); err != nil {
@@ -165,9 +188,11 @@ func resourceSlackConversationUpdate(ctx context.Context, d *schema.ResourceData
 			{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("Slack provider couldn't rename a slack conversation (%s) to %s due to *%s*", id, name, err.Error()),
-				Detail:   "https://api.slack.com/methods/conversations.rename",
+				Detail:   fmt.Sprintf("Please refer to %s for the details.", "https://api.slack.com/methods/conversations.rename"),
 			},
 		}
+	} else {
+		logger.trace(ctx, "Renamed the conversation to %s", name)
 	}
 
 	if topic, ok := d.GetOk("topic"); ok {
@@ -176,10 +201,12 @@ func resourceSlackConversationUpdate(ctx context.Context, d *schema.ResourceData
 				{
 					Severity: diag.Error,
 					Summary:  fmt.Sprintf("Slack provider couldn't set a topic of a slack conversation (%s) to %s due to *%s*", id, topic.(string), err.Error()),
-					Detail:   "https://api.slack.com/methods/conversations.setTopic",
+					Detail:   fmt.Sprintf("Please refer to %s for the details.", "https://api.slack.com/methods/conversations.setTopic"),
 				},
 			}
 		}
+	} else {
+		logger.trace(ctx, "Set the conversation topic to %s", topic)
 	}
 
 	if purpose, ok := d.GetOk("purpose"); ok {
@@ -188,7 +215,7 @@ func resourceSlackConversationUpdate(ctx context.Context, d *schema.ResourceData
 				{
 					Severity: diag.Error,
 					Summary:  fmt.Sprintf("Slack provider couldn't set a purpose of a slack conversation (%s) to %s due to *%s*", id, purpose.(string), err.Error()),
-					Detail:   "https://api.slack.com/methods/conversations.setPurpose",
+					Detail:   fmt.Sprintf("Please refer to %s for the details.", "https://api.slack.com/methods/conversations.setPurpose"),
 				},
 			}
 		}
@@ -202,11 +229,15 @@ func resourceSlackConversationUpdate(ctx context.Context, d *schema.ResourceData
 						{
 							Severity: diag.Error,
 							Summary:  fmt.Sprintf("Slack provider couldn't archive a slack conversation (%s) due to *%s*", id, err.Error()),
-							Detail:   "https://api.slack.com/methods/conversations.archive",
+							Detail:   fmt.Sprintf("Please refer to %s for the details.", "https://api.slack.com/methods/conversations.archive"),
 						},
 					}
+				} else {
+					logger.debug(ctx, "The conversation has already been archived")
 				}
 			}
+
+			logger.trace(ctx, "Archived the conversation")
 		} else {
 			if err := client.UnArchiveConversationContext(ctx, id); err != nil {
 				if err.Error() != "not_archived" {
@@ -214,11 +245,15 @@ func resourceSlackConversationUpdate(ctx context.Context, d *schema.ResourceData
 						{
 							Severity: diag.Error,
 							Summary:  fmt.Sprintf("Slack provider couldn't unarchive a slack conversation (%s) due to *%s*", id, err.Error()),
-							Detail:   "https://api.slack.com/methods/conversations.unarchive",
+							Detail:   fmt.Sprintf("Please refer to %s for the details.", "https://api.slack.com/methods/conversations.unarchive"),
 						},
 					}
+				} else {
+					logger.debug(ctx, "The conversation has already been unarchived")
 				}
 			}
+
+			logger.trace(ctx, "Unarchived the conversation")
 		}
 	}
 
@@ -226,28 +261,37 @@ func resourceSlackConversationUpdate(ctx context.Context, d *schema.ResourceData
 }
 
 func resourceSlackConversationDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*Team).client
-
 	id := d.Id()
+
+	client := meta.(*Team).client
+	logger := meta.(*Team).logger.withTags(map[string]interface{}{
+		"resource":        "slack_conversation",
+		"conversation_id": id,
+	})
 
 	action := d.Get("action_on_destroy").(string)
 
 	switch action {
 	case conversationActionOnDestroyNone:
-		log.Printf("[DEBUG] Do nothing on Conversation: %s (%s)", id, d.Get("name"))
+		logger.debug(ctx, "Does nothing on destroy")
 	case conversationActionOnDestroyArchive:
-		log.Printf("[DEBUG] Deleting(archive) Conversation: %s (%s)", id, d.Get("name"))
+		logger.debug(ctx, "Archive the conversation (%s) on destroy", d.Get("name").(string))
+
 		if err := client.ArchiveConversationContext(ctx, id); err != nil {
 			if err.Error() != "already_archived" {
 				return diag.Diagnostics{
 					{
 						Severity: diag.Error,
 						Summary:  fmt.Sprintf("Slack provider couldn't archive a slack conversation (%s) due to *%s*", id, err.Error()),
-						Detail:   "https://api.slack.com/methods/conversations.archive",
+						Detail:   fmt.Sprintf("Please refer to %s for the details.", "https://api.slack.com/methods/conversations.archive"),
 					},
 				}
+			} else {
+				logger.debug(ctx, "The conversation has already been archived")
 			}
 		}
+
+		logger.trace(ctx, "Archived the conversation")
 	default:
 		return diag.Diagnostics{
 			{
@@ -259,6 +303,8 @@ func resourceSlackConversationDelete(ctx context.Context, d *schema.ResourceData
 	}
 
 	d.SetId("")
+
+	logger.debug(ctx, "Cleared the resource id of this conversation so it's going to be removed from the state")
 
 	return nil
 }

@@ -64,22 +64,22 @@ func dataSourceConversation() *schema.Resource {
 
 func dataSlackConversationRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*Team).client
-	channelId := d.Get("channel_id").(string)
+	conversationId := d.Get("channel_id").(string)
 
 	logger := meta.(*Team).logger.withTags(map[string]interface{}{
-		"data_resource": "conversation",
-		"channel_id":    channelId,
+		"data":            "conversation",
+		"conversation_id": conversationId,
 	})
 
 	logger.trace(ctx, "Start reading a conversation")
 
-	channel, err := client.GetConversationInfoContext(ctx, channelId, false)
+	channel, err := client.GetConversationInfoContext(ctx, conversationId, false)
 
 	if err != nil {
 		return diag.Diagnostics{
 			{
 				Severity: diag.Error,
-				Summary:  fmt.Sprintf("Slack provider couldn't read conversation %s due to *%s*", channelId, err.Error()),
+				Summary:  fmt.Sprintf("Slack provider couldn't read conversation %s due to *%s*", conversationId, err.Error()),
 				Detail:   fmt.Sprintf("Please refer to %s for the details.", "https://api.slack.com/methods/conversations.info"),
 			},
 		}
