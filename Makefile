@@ -17,4 +17,4 @@ generate:
 	go generate
 
 test:
-	TF_ACC=1 go test ./... -timeout 120m
+	TF_ACC=1 go test ./... -timeout 120m -v
