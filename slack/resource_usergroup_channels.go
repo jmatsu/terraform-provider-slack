@@ -50,7 +50,7 @@ func resourceSlackUserGroupChannelsCreate(ctx context.Context, d *schema.Resourc
 
 	client := meta.(*Team).client
 	logger := meta.(*Team).logger.withTags(map[string]interface{}{
-		"resource":     "slack_conversation",
+		"resource":     "slack_usergroup_channels",
 		"usergroup_id": usergroupId,
 	})
 
@@ -91,7 +91,7 @@ func resourceSlackUserGroupChannelsRead(ctx context.Context, d *schema.ResourceD
 
 	client := meta.(*Team).client
 	logger := meta.(*Team).logger.withTags(map[string]interface{}{
-		"resource":     "slack_conversation",
+		"resource":     "slack_usergroup_channels",
 		"usergroup_id": currentId,
 	})
 
@@ -161,7 +161,7 @@ func resourceSlackUserGroupChannelsUpdate(ctx context.Context, d *schema.Resourc
 
 	client := meta.(*Team).client
 	logger := meta.(*Team).logger.withTags(map[string]interface{}{
-		"resource":     "slack_conversation",
+		"resource":     "slack_usergroup_channels",
 		"usergroup_id": currentId,
 	})
 
@@ -214,7 +214,7 @@ func resourceSlackUserGroupChannelsDelete(ctx context.Context, d *schema.Resourc
 
 	client := meta.(*Team).client
 	logger := meta.(*Team).logger.withTags(map[string]interface{}{
-		"resource":     "slack_conversation",
+		"resource":     "slack_usergroup_channels",
 		"usergroup_id": currentId,
 	})
 

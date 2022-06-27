@@ -7,13 +7,13 @@ func Test_Client(t *testing.T) {
 		Token: "test token",
 	}
 
-	client, err := config.ProviderContext()
+	team, err := config.ProviderContext("version", "commit")
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if client.(*Team).client == nil {
+	if team.client == nil {
 		t.Fatalf("required non-nil client")
 	}
 }

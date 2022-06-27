@@ -1,7 +1,6 @@
 package slack
 
 import (
-	"context"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/slack-go/slack"
@@ -34,7 +33,7 @@ var testUserGroup = slack.UserGroup{
 
 func Test_ResourceUserGroupMembersRead(t *testing.T) {
 	d := resourceSlackUserGroupMembers().TestResourceData()
-	slackClient := createStubClient(Routes{
+	ctx, team := createTestTeam(t, Routes{
 		{
 			Path: "/usergroups.users.list",
 			Response: userGroupUsersListResponse{
@@ -43,9 +42,6 @@ func Test_ResourceUserGroupMembersRead(t *testing.T) {
 			},
 		},
 	})
-
-	team := &Team{slackClient}
-	ctx := context.Background()
 
 	if diags := resourceSlackUserGroupMembersRead(ctx, d, team); diags.HasError() {
 		for _, d := range diags {
@@ -77,7 +73,7 @@ func Test_ResourceUserGroupMembersCreate(t *testing.T) {
 		t.Fatalf("err setting existing members: %s", err)
 	}
 
-	slackClient := createStubClient(Routes{
+	ctx, team := createTestTeam(t, Routes{
 		{
 			Path: "/usergroups.users.update",
 			Response: userGroupResponse{
@@ -86,9 +82,6 @@ func Test_ResourceUserGroupMembersCreate(t *testing.T) {
 			},
 		},
 	})
-
-	team := &Team{slackClient}
-	ctx := context.Background()
 
 	if diags := resourceSlackUserGroupMembersCreate(ctx, d, team); diags.HasError() {
 		for _, d := range diags {
@@ -126,7 +119,7 @@ func Test_ResourceUserGroupMembersUpdate(t *testing.T) {
 	newTestUserGroup := testUserGroup
 	newTestUserGroup.Users = append(newTestUserGroup.Users, "NUSERID")
 
-	slackClient := createStubClient(Routes{
+	ctx, team := createTestTeam(t, Routes{
 		{
 			Path:     "/usergroups.enable",
 			Response: slack.SlackResponse{Ok: true},
@@ -139,9 +132,6 @@ func Test_ResourceUserGroupMembersUpdate(t *testing.T) {
 			},
 		},
 	})
-
-	team := &Team{slackClient}
-	ctx := context.Background()
 
 	if diags := resourceSlackUserGroupMembersUpdate(ctx, d, team); diags.HasError() {
 		for _, d := range diags {
@@ -169,7 +159,7 @@ func Test_ResourceUserGroupMembersDelete(t *testing.T) {
 		t.Fatalf("err set usergroup_id: %s", err)
 	}
 
-	slackClient := createStubClient(Routes{
+	ctx, team := createTestTeam(t, Routes{
 		{
 			Path: "/usergroups.disable",
 			Response: userGroupResponse{
@@ -178,9 +168,6 @@ func Test_ResourceUserGroupMembersDelete(t *testing.T) {
 			},
 		},
 	})
-
-	team := &Team{slackClient}
-	ctx := context.Background()
 
 	if diags := resourceSlackUserGroupMembersDelete(ctx, d, team); diags.HasError() {
 		for _, d := range diags {
