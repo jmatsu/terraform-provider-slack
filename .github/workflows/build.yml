@@ -34,7 +34,7 @@ jobs:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     if: >
-      github.event_name == 'push &&
+      github.event_name == 'push' &&
       github.head_ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v3
