@@ -17,23 +17,23 @@ description: |-
 
 ### Required
 
-- **channel_id** (String)
+- `channel_id` (String)
 
 ### Optional
 
-- **id** (String) The ID of this resource.
-- **purpose** (String)
-- **topic** (String)
+- `purpose` (String)
+- `topic` (String)
 
 ### Read-Only
 
-- **created** (Number)
-- **creator** (String)
-- **is_archived** (Boolean)
-- **is_ext_shared** (Boolean)
-- **is_org_shared** (Boolean)
-- **is_private** (Boolean)
-- **is_shared** (Boolean)
-- **name** (String)
+- `created` (Number)
+- `creator` (String)
+- `id` (String) The ID of this resource.
+- `is_archived` (Boolean)
+- `is_ext_shared` (Boolean)
+- `is_org_shared` (Boolean)
+- `is_private` (Boolean)
+- `is_shared` (Boolean)
+- `name` (String)
 
 

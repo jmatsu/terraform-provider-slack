@@ -17,18 +17,18 @@ description: |-
 
 ### Required
 
-- **usergroup_id** (String)
+- `usergroup_id` (String)
 
 ### Optional
 
-- **description** (String)
-- **id** (String) The ID of this resource.
+- `description` (String)
 
 ### Read-Only
 
-- **auto_type** (String)
-- **handle** (String)
-- **name** (String)
-- **team_id** (String)
+- `auto_type` (String)
+- `handle` (String)
+- `id` (String) The ID of this resource.
+- `name` (String)
+- `team_id` (String)
 
 

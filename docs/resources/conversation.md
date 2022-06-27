@@ -17,22 +17,23 @@ description: |-
 
 ### Required
 
-- **is_private** (Boolean)
-- **name** (String)
+- `action_on_destroy` (String) Either of none or archive
+- `is_private` (Boolean)
+- `name` (String)
 
 ### Optional
 
-- **id** (String) The ID of this resource.
-- **is_archived** (Boolean)
-- **purpose** (String)
-- **topic** (String)
+- `is_archived` (Boolean)
+- `purpose` (String)
+- `topic` (String)
 
 ### Read-Only
 
-- **created** (Number)
-- **creator** (String)
-- **is_ext_shared** (Boolean)
-- **is_org_shared** (Boolean)
-- **is_shared** (Boolean)
+- `created` (Number)
+- `creator` (String)
+- `id` (String) The ID of this resource.
+- `is_ext_shared` (Boolean)
+- `is_org_shared` (Boolean)
+- `is_shared` (Boolean)
 
 

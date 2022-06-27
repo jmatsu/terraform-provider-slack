@@ -2,27 +2,56 @@ name: build
 
 on:
   pull_request:
+  push:
+    branches:
+      - master
 
 jobs:
-  goreleaser:
+  shellcheck:
     runs-on: ubuntu-latest
     steps:
-      -
-        name: Checkout
-        uses: actions/checkout@v3
-      -
-        name: Set up Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v3
+      - uses: reviewdog/action-shellcheck@v1
         with:
-          go-version: 1.16
-      -
-        name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v3
+          reporter: github-pr-review
+          path: tools
+          pattern: "*.bash"
+  fmt:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-go
+      - run: make fmt-check
+  test:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-go
+      - run: make test
+  docscheck:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'push' &&
+      github.head_ref == 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-go
+      - run: make generate
+      - run: git diff --exit-code --name-only
+  goreleaser:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-go
+      - uses: goreleaser/goreleaser-action@v3
         with:
           version: latest
           args: build --snapshot --rm-dist
-      -
-        uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v3
         with:
           name: providers
           path: dist/*

@@ -2,15 +2,24 @@ package slack
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func validateEnums(values []string) schema.SchemaValidateFunc {
-	return func(v interface{}, k string) (we []string, errors []error) {
+func validateEnums(values []string) schema.SchemaValidateDiagFunc {
+	return func(v interface{}, path cty.Path) diag.Diagnostics {
 		if !containsAny(values, v.(string)) {
-			errors = append(errors, fmt.Errorf("%s is an invalid value for argument %s", v.(string), k))
+			return diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  fmt.Sprintf("%s is an invalid value for argument %s", v.(string), path),
+					Detail:   "",
+				},
+			}
 		}
-		return
+
+		return nil
 	}
 }
 

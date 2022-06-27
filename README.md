@@ -19,19 +19,17 @@ $ mv terraform-provider-slack ~/.terraform.d/plugins/[architecture name]/
 
 See https://www.terraform.io/docs/configuration/providers.html#third-party-plugins for more details.
 
-## Requirements
+# Requirements
 
 - [Terraform](https://www.terraform.io/downloads.html) >= v0.12.0 (v0.11.x may work but not supported actively)
 - Scope: `users:read,users:read.email,usergroups:read,usergroups:write,channels:read,channels:write,groups:read,groups:write`
   - `users:read.email` is required since v0.6.0
 
-## Limitations
+# Limitations
 
-**I do not have any Plus or Enterprise Grid workspace which I'm free to use, unfortunately.**
+Several resources that require Slack Plus or Enterprise Grid are not supported. e.g. a slack user (not a data source)
 
-That's why several resources, e.g. a slack user, have not been supported yet. 
-
-## Resources
+# Resources
 
 ```hcl
 provider "slack" {
@@ -41,8 +39,8 @@ provider "slack" {
 }
 
 data "slack_user" "..." {
-  query_type = "name" or "id" or "email"
-  query_value = "<name or real name>" or "<user id>" or "<email>"
+  query_type = "id" or "email"
+  query_value = "<user id>" or "<email>"
 }
 
 data "slack_conversation" "..." {
@@ -80,7 +78,7 @@ resource "slack_usergroup_channels" "..." {
 }
 ```
 
-## Import
+# Import
 
 ```bash
 $ terraform import slack_conversation.<name> <channel id>
@@ -89,7 +87,60 @@ $ terraform import slack_usergroup_members.<name> <usergroup id>
 $ terraform import slack_usergroup_channels.<name> <usergroup id>
 ```
 
-## Release
+# Trouble Shooting
+
+## Show provider's debug logs
+
+Enable the provider logging. All custom logs should have `provider=jmatsu/slack` in its body.
+
+```bash
+# The following expects you are using `slack` as provider name
+TF_LOG=json TF_LOG_PROVIDER_SLACK=TRACE ...cmd
+```
+
+# Development
+
+Source codes consist of an entrypoint `main.go` and `slack/**.go`.
+
+## Try the built provider in projects
+
+Build and install the provider into your machine.
+
+> Currently, only `~/.terraform.d` is supported.
+
+```bash
+# choose OS_NAME and ARCH of your machine
+make install-${OS_NAME}_${ARCH}
+```
+
+Use the built provider by specifying the custom source.
+
+```terraform
+terraform {
+  required_providers {
+    slack = {
+      # please make sure ~/.terraform.d/plugins/github.com/jmatsu/slack/${version}/${OS_NAME}_${ARCH}/terraform-provider-slack_v${version} exists and it's executable.
+      source = "github.com/jmatsu/slack"
+      version = "${version}"
+    }
+  }
+}
+```
+
+## Other commands
+
+```
+# Build the binary
+make build
+
+# Run test
+make test
+
+# Apply gofmt (overwrite mode)
+make fmt
+```
+
+# Release
 
 CI will build and archive the release artifacts to GitHub Releases and terraform provider registry. 
 
@@ -101,10 +152,10 @@ git tag "v$version"
 git push "v$version"
 ```
 
-## LICENSE
+# LICENSE
 
 Under [MIT](./LICENSE)
 
-## Maintainers
+# Maintainers
 
 @jmatsu, @billcchung

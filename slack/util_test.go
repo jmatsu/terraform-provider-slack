@@ -1,6 +1,9 @@
 package slack
 
-import "testing"
+import (
+	"github.com/hashicorp/go-cty/cty"
+	"testing"
+)
 
 func Test_validateEnums(t *testing.T) {
 
@@ -29,9 +32,9 @@ func Test_validateEnums(t *testing.T) {
 	validationFunc := validateEnums([]string{"foo", "bar", "baz"})
 
 	for _, tc := range cases {
-		_, errors := validationFunc(tc.Value, "test_arg")
+		diag := validationFunc(tc.Value, cty.Path{})
 
-		if len(errors) != tc.ExpectErrCount {
+		if len(diag) != tc.ExpectErrCount {
 			t.Fatalf("Expected 1 validation error but %d", tc.ExpectErrCount)
 		}
 	}

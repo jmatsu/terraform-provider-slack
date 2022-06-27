@@ -17,17 +17,17 @@ description: |-
 
 ### Required
 
-- **handle** (String)
+- `handle` (String)
 
 ### Optional
 
-- **auto_type** (String)
-- **description** (String)
-- **id** (String) The ID of this resource.
-- **name** (String)
+- `auto_type` (String)
+- `description` (String)
+- `name` (String)
 
 ### Read-Only
 
-- **team_id** (String)
+- `id` (String) The ID of this resource.
+- `team_id` (String)
 
 

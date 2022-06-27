@@ -2,13 +2,14 @@ package slack
 
 import (
 	"context"
-	"github.com/hashicorp/terraform/helper/schema"
-	"log"
+	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceConversation() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSlackConversationRead,
+		ReadContext: dataSlackConversationRead,
 
 		Schema: map[string]*schema.Schema{
 			"channel_id": {
@@ -61,18 +62,29 @@ func dataSourceConversation() *schema.Resource {
 	}
 }
 
-func dataSlackConversationRead(d *schema.ResourceData, meta interface{}) error {
+func dataSlackConversationRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*Team).client
+	conversationId := d.Get("channel_id").(string)
 
-	channelId := d.Get("channel_id").(string)
+	logger := meta.(*Team).logger.withTags(map[string]interface{}{
+		"data":            "conversation",
+		"conversation_id": conversationId,
+	})
 
-	ctx := context.WithValue(context.Background(), ctxId, channelId)
+	logger.trace(ctx, "Start reading a conversation")
 
-	log.Printf("[DEBUG] Reading Conversation: %s", channelId)
-	channel, err := client.GetConversationInfoContext(ctx, channelId, false)
+	channel, err := client.GetConversationInfoContext(ctx, conversationId, false)
 
 	if err != nil {
-		return err
+		return diag.Diagnostics{
+			{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("Slack provider couldn't read conversation %s due to *%s*", conversationId, err.Error()),
+				Detail:   fmt.Sprintf("Please refer to %s for the details.", "https://api.slack.com/methods/conversations.info"),
+			},
+		}
+	} else {
+		logger.trace(ctx, "Got a response from Slack api")
 	}
 
 	d.SetId(channel.ID)
@@ -86,6 +98,8 @@ func dataSlackConversationRead(d *schema.ResourceData, meta interface{}) error {
 	_ = d.Set("is_org_shared", channel.IsOrgShared)
 	_ = d.Set("created", channel.Created)
 	_ = d.Set("creator", channel.Creator)
+
+	logger.debug(ctx, "Conversation #%s (isArchived = %t)", d.Get("name").(string), d.Get("is_archived").(bool))
 
 	return nil
 }

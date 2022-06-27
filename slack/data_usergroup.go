@@ -3,14 +3,14 @@ package slack
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/slack-go/slack"
-	"log"
 )
 
 func dataSourceUserGroup() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSlackUserGroupRead,
+		ReadContext: dataSlackUserGroupRead,
 
 		Schema: map[string]*schema.Schema{
 			"usergroup_id": {
@@ -42,13 +42,17 @@ func dataSourceUserGroup() *schema.Resource {
 	}
 }
 
-func dataSlackUserGroupRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*Team).client
-
+func dataSlackUserGroupRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	usergroupId := d.Get("usergroup_id").(string)
-	ctx := context.WithValue(context.Background(), ctxId, usergroupId)
 
-	log.Printf("[DEBUG] Reading usergroup: %s", usergroupId)
+	client := meta.(*Team).client
+	logger := meta.(*Team).logger.withTags(map[string]interface{}{
+		"data":         "slack_usergroup",
+		"usergroup_id": usergroupId,
+	})
+
+	logger.trace(ctx, "Start reading a usergroup")
+
 	groups, err := client.GetUserGroupsContext(ctx, func(params *slack.GetUserGroupsParams) {
 		params.IncludeUsers = false
 		params.IncludeCount = false
@@ -56,7 +60,15 @@ func dataSlackUserGroupRead(d *schema.ResourceData, meta interface{}) error {
 	})
 
 	if err != nil {
-		return err
+		return diag.Diagnostics{
+			{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("provicer cannot find a usergroup (%s) due to *%s*", usergroupId, err.Error()),
+				Detail:   fmt.Sprintf("Please refer to %s for the details.", "https://api.slack.com/methods/usergroups.list"),
+			},
+		}
+	} else {
+		logger.trace(ctx, "Got a response from Slack api")
 	}
 
 	for _, group := range groups {
@@ -67,9 +79,17 @@ func dataSlackUserGroupRead(d *schema.ResourceData, meta interface{}) error {
 			_ = d.Set("description", group.Description)
 			_ = d.Set("auto_type", group.AutoType)
 			_ = d.Set("team_id", group.TeamID)
+
+			logger.debug(ctx, "UserGroup @%s", d.Get("handle").(string))
 			return nil
 		}
 	}
 
-	return fmt.Errorf("%s could not be found", usergroupId)
+	return diag.Diagnostics{
+		{
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("provicer cannot find a usergroup (%s)", usergroupId),
+			Detail:   fmt.Sprintf("a usergroup (%s) is not found in available usergroups that this token can view", usergroupId),
+		},
+	}
 }
