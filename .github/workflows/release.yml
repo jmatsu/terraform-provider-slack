@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/setup-go
-      - run: exec_test
+      - run: make test
   goreleaser:
     needs:
       - test
