@@ -178,15 +178,7 @@ func resourceSlackUserGroupUpdate(ctx context.Context, d *schema.ResourceData, m
 		name = value.(string)
 	}
 
-	editedUserGroup := &slack.UserGroup{
-		ID:          id,
-		Handle:      handle,
-		Name:        name,
-		Description: d.Get("description").(string),
-		AutoType:    d.Get("auto_type").(string),
-	}
-
-	userGroup, err := client.UpdateUserGroupContext(ctx, *editedUserGroup)
+	userGroup, err := client.UpdateUserGroupContext(ctx, id, slack.UpdateUserGroupsOptionName(name), slack.UpdateUserGroupsOptionHandle(handle), slack.UpdateUserGroupsOptionDescription(d.Get("description").(*string)))
 
 	if err != nil {
 		return diag.Diagnostics{

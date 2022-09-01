@@ -62,14 +62,7 @@ func resourceSlackUserGroupChannelsCreate(ctx context.Context, d *schema.Resourc
 		channelsIds[i] = v.(string)
 	}
 
-	params := &slack.UserGroup{
-		ID: usergroupId,
-		Prefs: slack.UserGroupPrefs{
-			Channels: channelsIds,
-		},
-	}
-
-	userGroup, err := client.UpdateUserGroupContext(ctx, *params)
+	userGroup, err := client.UpdateUserGroupContext(ctx, usergroupId, slack.UpdateUserGroupsOptionChannels(channelsIds))
 
 	if err != nil {
 		return diag.Diagnostics{
@@ -185,14 +178,7 @@ func resourceSlackUserGroupChannelsUpdate(ctx context.Context, d *schema.Resourc
 		channelsIds[i] = v.(string)
 	}
 
-	params := &slack.UserGroup{
-		ID: usergroupId,
-		Prefs: slack.UserGroupPrefs{
-			Channels: channelsIds,
-		},
-	}
-
-	userGroup, err := client.UpdateUserGroupContext(ctx, *params)
+	userGroup, err := client.UpdateUserGroupContext(ctx, usergroupId, slack.UpdateUserGroupsOptionChannels(channelsIds))
 
 	if err != nil {
 		return diag.Diagnostics{
@@ -232,15 +218,8 @@ func resourceSlackUserGroupChannelsDelete(ctx context.Context, d *schema.Resourc
 		}
 	}
 
-	params := &slack.UserGroup{
-		ID: usergroupId,
-		Prefs: slack.UserGroupPrefs{
-			Channels: []string{},
-		},
-	}
-
 	// 0 default channels are allowed by spec
-	if _, err := client.UpdateUserGroupContext(ctx, *params); err != nil {
+	if _, err := client.UpdateUserGroupContext(ctx, usergroupId, slack.UpdateUserGroupsOptionChannels([]string{})); err != nil {
 		return diag.Diagnostics{
 			{
 				Severity: diag.Error,
