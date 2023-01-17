@@ -2,9 +2,12 @@ package slack
 
 import (
 	"context"
+	"errors"
 	"fmt"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/slack-go/slack"
 )
 
 func dataSourceConversation() *schema.Resource {
@@ -14,7 +17,11 @@ func dataSourceConversation() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"channel_id": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
+			},
+			"channel_name": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"name": {
 				Type:     schema.TypeString,
@@ -65,6 +72,7 @@ func dataSourceConversation() *schema.Resource {
 func dataSlackConversationRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*Team).client
 	conversationId := d.Get("channel_id").(string)
+	conversationName := d.Get("channel_name").(string)
 
 	logger := meta.(*Team).logger.withTags(map[string]interface{}{
 		"data":            "conversation",
@@ -73,7 +81,13 @@ func dataSlackConversationRead(ctx context.Context, d *schema.ResourceData, meta
 
 	logger.trace(ctx, "Start reading a conversation")
 
-	channel, err := client.GetConversationInfoContext(ctx, conversationId, false)
+	var channel *slack.Channel
+	var err error
+	if conversationName != "" {
+		channel, err = findConversationByName(client, conversationName)
+	} else {
+		channel, err = client.GetConversationInfoContext(ctx, conversationId, false)
+	}
 
 	if err != nil {
 		return diag.Diagnostics{
@@ -102,4 +116,19 @@ func dataSlackConversationRead(ctx context.Context, d *schema.ResourceData, meta
 	logger.debug(ctx, "Conversation #%s (isArchived = %t)", d.Get("name").(string), d.Get("is_archived").(bool))
 
 	return nil
+}
+
+func findConversationByName(client *slack.Client, name string) (*slack.Channel, error) {
+	channels, _, err := client.GetConversations(&slack.GetConversationsParameters{Limit: 1024})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, c := range channels {
+		if c.Name == name {
+			return &c, nil
+		}
+	}
+
+	return nil, errors.New("channel not found")
 }
